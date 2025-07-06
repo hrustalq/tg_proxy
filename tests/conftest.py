@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 import tempfile
 import os
 
-from database import Base, User, ProxyConfig, Payment
+from database import Base, User, ProxyConfig, Payment, ProxyServer
 from config import Settings
 
 
@@ -204,3 +204,79 @@ async def test_payment(db_session, subscribed_user):
     await db_session.commit()
     await db_session.refresh(payment)
     return payment
+
+
+@pytest.fixture
+async def test_proxy_server(db_session):
+    """Create a test proxy server."""
+    server = ProxyServer(
+        address="test.proxy.com",
+        port=443,
+        description="Test Proxy Server",
+        location="US",
+        max_users=1000,
+        is_active=True
+    )
+    db_session.add(server)
+    await db_session.commit()
+    await db_session.refresh(server)
+    return server
+
+
+@pytest.fixture
+async def inactive_proxy_server(db_session):
+    """Create an inactive test proxy server."""
+    server = ProxyServer(
+        address="inactive.proxy.com",
+        port=8080,
+        description="Inactive Proxy Server",
+        location="EU",
+        max_users=500,
+        is_active=False
+    )
+    db_session.add(server)
+    await db_session.commit()
+    await db_session.refresh(server)
+    return server
+
+
+@pytest.fixture
+def admin_user():
+    """Create a mock admin user."""
+    user = MagicMock()
+    user.id = 123456789
+    user.username = "admin"
+    user.first_name = "Admin"
+    return user
+
+
+@pytest.fixture
+def non_admin_user():
+    """Create a mock non-admin user."""
+    user = MagicMock()
+    user.id = 999999999
+    user.username = "regular"
+    user.first_name = "Regular"
+    return user
+
+
+@pytest.fixture
+def mock_admin_message(admin_user):
+    """Create a mock message from admin user."""
+    message = MagicMock()
+    message.from_user = admin_user
+    message.answer = AsyncMock()
+    message.reply = AsyncMock()
+    return message
+
+
+@pytest.fixture
+def mock_admin_callback(admin_user):
+    """Create a mock callback query from admin user."""
+    callback = MagicMock()
+    callback.from_user = admin_user
+    callback.answer = AsyncMock()
+    callback.message = MagicMock()
+    callback.message.edit_text = AsyncMock()
+    callback.data = "test_admin_data"
+    return callback

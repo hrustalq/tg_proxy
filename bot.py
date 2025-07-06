@@ -36,7 +36,7 @@ def is_admin(user_id: int) -> bool:
 
 def admin_required(func):
     """Decorator to require admin access"""
-    async def wrapper(message_or_query, *args, **kwargs):
+    async def wrapper(message_or_query, **kwargs):
         user_id = message_or_query.from_user.id
         if not is_admin(user_id):
             if hasattr(message_or_query, 'answer'):
@@ -44,7 +44,7 @@ def admin_required(func):
             else:
                 await message_or_query.answer("❌ Access denied. Admin privileges required.", show_alert=True)
             return
-        return await func(message_or_query, *args, **kwargs)
+        return await func(message_or_query)
     return wrapper
 
 
