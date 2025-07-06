@@ -4,6 +4,10 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from datetime import datetime, timezone
 from config import settings
+import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
@@ -74,8 +78,30 @@ async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False
 
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Ensure database directory exists for SQLite
+    if settings.database_url.startswith("sqlite"):
+        # Extract path from database URL
+        db_path = settings.database_url.replace("sqlite:///", "").replace("sqlite://", "")
+        if db_path.startswith("./"):
+            db_path = db_path[2:]  # Remove ./ prefix
+        
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            logger.info(f"Created database directory: {db_dir}")
+        
+        # Create empty file if it doesn't exist
+        if not os.path.exists(db_path):
+            open(db_path, 'a').close()
+            logger.info(f"Created database file: {db_path}")
+    
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
 
 
 async def get_db():

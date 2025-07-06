@@ -27,10 +27,10 @@ services:
     depends_on:
       - mtg-proxy
     volumes:
-      - ./tg_proxy.db:/app/tg_proxy.db
+      - ./data:/app/data
       - ./.env:/app/.env
     environment:
-      - DATABASE_URL=sqlite:///./tg_proxy.db
+      - DATABASE_URL=sqlite:///./data/tg_proxy.db
       - MTG_PROXY_HOST=mtg-proxy
       - MTG_PROXY_PORT=${MTG_BIND_PORT:-3128}
       - MTG_SECRET=${MTG_SECRET}
