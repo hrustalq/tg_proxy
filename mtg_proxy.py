@@ -24,7 +24,7 @@ class MTGProxyManager:
     """Manager for MTG proxy operations"""
     
     def __init__(self):
-        self.proxy_host = os.getenv('MTG_PROXY_HOST', 'mtg-proxy')
+        self.proxy_host = os.getenv('MTG_PROXY_HOST', 'mtg-proxy')  # Internal Docker host
         self.proxy_port = settings.mtg_bind_port
         self.secret = settings.mtg_secret
         
@@ -35,7 +35,11 @@ class MTGProxyManager:
         self.api_id = settings.telegram_api_id
         self.api_hash = settings.telegram_api_hash
         
-        logger.info(f"Initialized MTG Proxy Manager - Host: {self.proxy_host}:{self.proxy_port}")
+        # External host for client connections
+        proxy_servers = settings.get_proxy_servers()
+        self.external_host = proxy_servers[0].split(':')[0] if proxy_servers else "localhost"
+        
+        logger.info(f"Initialized MTG Proxy Manager - Internal: {self.proxy_host}:{self.proxy_port}, External: {self.external_host}:{settings.mtg_host_port}")
     
     def _decode_secret(self, secret: str) -> Optional[bytes]:
         """Decode MTG secret from hex or base64 format"""
@@ -117,7 +121,8 @@ class MTGProxyManager:
     
     def generate_client_links(self, server_host: Optional[str] = None) -> Dict[str, str]:
         """Generate client connection links"""
-        host = server_host or self.proxy_host
+        # Use provided server_host or fallback to external host
+        host = server_host or self.external_host
         port = settings.mtg_host_port
         
         base_url = f"tg://proxy?server={host}&port={port}&secret={self.secret}"
@@ -131,7 +136,8 @@ class MTGProxyManager:
     
     def get_proxy_config_text(self, server_host: Optional[str] = None) -> str:
         """Generate proxy configuration text for users"""
-        host = server_host or self.proxy_host
+        # Use provided server_host or fallback to external host
+        host = server_host or self.external_host
         port = settings.mtg_host_port
         
         return f"""🔒 **MTProto Proxy Configuration**
