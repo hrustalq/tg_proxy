@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__web-search__search"
+      "mcp__web-search__search",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

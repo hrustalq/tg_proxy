@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from datetime import datetime
+from datetime import datetime, timezone
 from config import settings
 
 Base = declarative_base()
@@ -17,7 +17,7 @@ class User(Base):
     first_name = Column(String(255))
     subscription_until = Column(DateTime)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     proxy_configs = relationship("ProxyConfig", back_populates="user")
     payments = relationship("Payment", back_populates="user")
@@ -31,7 +31,7 @@ class ProxyConfig(Base):
     proxy_secret = Column(String(255), nullable=False)
     server_address = Column(String(255), nullable=False)
     port = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="proxy_configs")
 
@@ -45,7 +45,7 @@ class Payment(Base):
     currency = Column(String(10), default="USD")
     status = Column(String(50), default="pending")
     provider_payment_id = Column(String(255))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="payments")
 
