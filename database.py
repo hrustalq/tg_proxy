@@ -50,6 +50,20 @@ class Payment(Base):
     user = relationship("User", back_populates="payments")
 
 
+class ProxyServer(Base):
+    __tablename__ = "proxy_servers"
+    
+    id = Column(Integer, primary_key=True)
+    address = Column(String(255), nullable=False, unique=True)
+    port = Column(Integer, nullable=False, default=443)
+    is_active = Column(Boolean, default=True)
+    description = Column(String(500))
+    location = Column(String(100))
+    max_users = Column(Integer, default=1000)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
 # Database setup
 if settings.database_url.startswith("sqlite"):
     engine = create_async_engine(settings.database_url.replace("sqlite://", "sqlite+aiosqlite://"))
