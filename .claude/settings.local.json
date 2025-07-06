@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__web-search__search"
+    ],
+    "deny": []
+  }
+}

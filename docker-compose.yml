@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mtg-proxy:
+    image: 9seconds/mtg:latest
+    command: run 0.0.0.0:3128 ${MTG_SECRET}
+    ports:
+      - "3128:3128"
+      - "8080:8080"
+    environment:
+      - MTG_STATS_HTTP=0.0.0.0:8080
+      - MTG_ADTAG=your_ad_tag_here
+    restart: unless-stopped
+    networks:
+      - tg-proxy-network
+
+  telegram-bot:
+    build: .
+    depends_on:
+      - mtg-proxy
+    volumes:
+      - ./tg_proxy.db:/app/tg_proxy.db
+      - ./.env:/app/.env
+    environment:
+      - DATABASE_URL=sqlite:///./tg_proxy.db
+    restart: unless-stopped
+    networks:
+      - tg-proxy-network
+
+networks:
+  tg-proxy-network:
+    driver: bridge
