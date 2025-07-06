@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db, User, ProxyConfig, Payment, ProxyServer
 from config import settings
+from mtg_proxy import mtg_proxy_manager, mtg_monitor
 import secrets
 import string
 
@@ -87,26 +88,19 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
     return keyboard
 
 
-def get_proxy_config_text(proxy_configs: List[ProxyConfig]) -> str:
-    """Generate proxy configuration text"""
-    if not proxy_configs:
-        return "No proxy configurations available."
-    
-    config_text = "🔗 Your Proxy Configurations:\n\n"
-    for i, config in enumerate(proxy_configs, 1):
-        config_text += f"**Server {i}:**\n"
-        config_text += f"Server: `{config.server_address}`\n"
-        config_text += f"Port: `{config.port}`\n"
-        config_text += f"Secret: `{config.proxy_secret}`\n"
-        config_text += f"MTG Secret: `{settings.mtg_secret}`\n"
-        config_text += f"Direct Link: `tg://proxy?server={config.server_address}&port={config.port}&secret={config.proxy_secret}`\n\n"
-    
-    config_text += "📱 **Setup Instructions:**\n"
-    config_text += "1. Click on any Direct Link above\n"
-    config_text += "2. Or manually add proxy in Telegram settings\n"
-    config_text += "3. Works with all official Telegram clients\n\n"
-    
-    return config_text
+def get_proxy_config_text(server_host: str = None) -> str:
+    """Generate proxy configuration text using MTG proxy manager"""
+    try:
+        # Get MTG proxy configuration
+        config_text = mtg_proxy_manager.get_proxy_config_text(server_host)
+        
+        # Add status information
+        status_text = mtg_monitor.get_status_text()
+        
+        return f"{config_text}\n\n{status_text}"
+    except Exception as e:
+        logger.error(f"Error generating proxy config: {e}")
+        return "❌ Error generating proxy configuration. Please try again later."
 
 
 @dp.message(CommandStart())
@@ -251,37 +245,17 @@ async def config_command(message: Message):
                 )
             return
         
-        result = await session.execute(select(ProxyConfig).where(ProxyConfig.user_id == user.id))
-        proxy_configs = result.scalars().all()
+        # Get proxy servers from settings and use the first one as default
+        proxy_servers = settings.get_proxy_servers()
+        server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
         
-        if not proxy_configs:
-            # Create proxy configs for the user
-            for i, server in enumerate(settings.get_proxy_servers()):
-                if ':' in server:
-                    server_address, port = server.split(':', 1)
-                    port = int(port)
-                else:
-                    server_address = server
-                    port = 443  # Default MTProto port
-                
-                proxy_config = ProxyConfig(
-                    user_id=user.id,
-                    proxy_secret=generate_proxy_secret(),
-                    server_address=server_address,
-                    port=port
-                )
-                session.add(proxy_config)
-            
-            await session.commit()
-            result = await session.execute(select(ProxyConfig).where(ProxyConfig.user_id == user.id))
-            proxy_configs = result.scalars().all()
-        
-        config_text = get_proxy_config_text(proxy_configs)
+        config_text = get_proxy_config_text(server_host)
         await message.answer(
             config_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")]
+                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
+                [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
             ])
         )
 
@@ -365,44 +339,53 @@ async def refresh_config_callback(callback_query: CallbackQuery):
             await callback_query.answer("Subscription expired!", show_alert=True)
             return
         
-        # Delete old configs and create new ones
-        result = await session.execute(select(ProxyConfig).where(ProxyConfig.user_id == user.id))
-        old_configs = result.scalars().all()
-        for config in old_configs:
-            await session.delete(config)
-        await session.flush()  # Ensure deletions are processed before inserts
+        # Get proxy servers from settings and use the first one as default
+        proxy_servers = settings.get_proxy_servers()
+        server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
         
-        for server in settings.get_proxy_servers():
-            if ':' in server:
-                server_address, port = server.split(':', 1)
-                port = int(port)
-            else:
-                server_address = server
-                port = 443  # Default MTProto port
-                
-            proxy_config = ProxyConfig(
-                user_id=user.id,
-                proxy_secret=generate_proxy_secret(),
-                server_address=server_address,
-                port=port
-            )
-            session.add(proxy_config)
-        
-        await session.commit()
-        
-        result = await session.execute(select(ProxyConfig).where(ProxyConfig.user_id == user.id))
-        proxy_configs = result.scalars().all()
-        
-        config_text = get_proxy_config_text(proxy_configs)
+        config_text = get_proxy_config_text(server_host)
         await callback_query.message.edit_text(
             config_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")]
+                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
+                [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
             ])
         )
     
     await callback_query.answer("Configuration refreshed!")
+
+
+@dp.callback_query(lambda c: c.data == "proxy_status")
+async def proxy_status_callback(callback_query: CallbackQuery):
+    """Handle proxy status callback"""
+    async for session in get_db():
+        user = await get_user_by_telegram_id(session, callback_query.from_user.id)
+        
+        if not await is_user_subscribed(user):
+            await callback_query.answer("Subscription expired!", show_alert=True)
+            return
+        
+        # Get detailed status information
+        status_text = mtg_monitor.get_status_text()
+        
+        # Check proxy health
+        health_status = await mtg_monitor.health_check()
+        health_emoji = "✅" if health_status else "❌"
+        health_text = "Healthy" if health_status else "Unhealthy"
+        
+        full_status = f"{status_text}\n\n🏥 **Health Check:** {health_emoji} {health_text}"
+        
+        await callback_query.message.edit_text(
+            full_status,
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="proxy_status")],
+                [InlineKeyboardButton(text="🔙 Back to Config", callback_data="get_config")]
+            ])
+        )
+    
+    await callback_query.answer("Status updated!")
 
 
 @dp.pre_checkout_query()

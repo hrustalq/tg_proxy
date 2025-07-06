@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -10,7 +10,22 @@ class Settings(BaseSettings):
     proxy_servers: str
     subscription_price: float = 5.00
     subscription_duration: int = 30
+    
+    # MTG Proxy Configuration
     mtg_secret: str
+    mtg_host_port: int = 443
+    mtg_bind_port: int = 3128
+    mtg_debug: bool = False
+    
+    # Telegram API Configuration
+    telegram_api_id: Optional[int] = None
+    telegram_api_hash: Optional[str] = None
+    
+    # Optional: SOCKS5 Proxy for chaining
+    socks5_proxy_url: Optional[str] = None
+    
+    # Monitoring
+    prometheus_retention: str = "15d"
     
     model_config = SettingsConfigDict(
         env_file=".env",

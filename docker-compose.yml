@@ -1,21 +1,29 @@
-version: '3.8'
-
 services:
   mtg-proxy:
-    image: 9seconds/mtg:latest
-    command: run 0.0.0.0:3128 ${MTG_SECRET}
-    ports:
-      - "3128:3128"
-      - "8080:8080"
-    environment:
-      - MTG_STATS_HTTP=0.0.0.0:8080
-      - MTG_ADTAG=your_ad_tag_here
+    image: nineseconds/mtg:2
+    container_name: mtg-proxy
     restart: unless-stopped
+    ports:
+      - "${MTG_HOST_PORT:-443}:${MTG_BIND_PORT:-3128}"
+      - "8080:8080"
+    volumes:
+      - ./mtg/config.toml:/config.toml:ro
+      - ./mtg/blocklist.txt:/blocklist.txt:ro
+    command: run /config.toml
     networks:
       - tg-proxy-network
+    environment:
+      - MTG_DEBUG=${MTG_DEBUG:-false}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   telegram-bot:
     build: .
+    container_name: telegram-bot
+    restart: unless-stopped
     depends_on:
       - mtg-proxy
     volumes:
@@ -23,10 +31,32 @@ services:
       - ./.env:/app/.env
     environment:
       - DATABASE_URL=sqlite:///./tg_proxy.db
-    restart: unless-stopped
+      - MTG_PROXY_HOST=mtg-proxy
+      - MTG_PROXY_PORT=${MTG_BIND_PORT:-3128}
+      - MTG_SECRET=${MTG_SECRET}
+      - PYTHONUNBUFFERED=1
     networks:
       - tg-proxy-network
+
+  # Optional: Prometheus for monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - tg-proxy-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
 
 networks:
   tg-proxy-network:
     driver: bridge
+
+volumes:
+  prometheus-data:

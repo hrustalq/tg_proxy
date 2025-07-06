@@ -7,3 +7,7 @@ uvloop==0.21.0
 cryptography==42.0.8
 aiohttp==3.10.5
 python-dotenv==1.0.1
+requests>=2.28.0
+pysocks>=1.7.1
+telethon>=1.25.0
+cryptg>=0.4

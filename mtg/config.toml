@@ -1,0 +1,14 @@
+secret = "ee473ce5d4958eb5f968c87680a23854a0676f6f676c652e636f6d"
+bind-to = "0.0.0.0:3128"
+concurrency = 8192
+prefer-ip = "prefer-ipv6"
+
+[network.timeout]
+tcp = "5s"
+http = "10s"
+idle = "1m"
+
+[stats.prometheus]
+enabled = true
+bind-to = "0.0.0.0:8080"
+http-path = "/metrics"

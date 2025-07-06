@@ -1,91 +1,236 @@
 # Telegram Proxy Bot
 
-A Telegram bot that provides MTProto proxy access through subscription management.
+A Telegram bot that provides MTProto proxy access through subscription management using the latest MTG (nineseconds/mtg:2) proxy implementation.
 
 ## Features
 
-- 🔒 Secure MTProto proxy protocol
+- 🔒 Secure MTProto proxy protocol with MTG v2
 - 💰 Subscription-based access model
 - 🎁 Free trial for new users
 - 🌍 Multiple server locations
 - ⚡ High-speed connections
 - 📱 Easy-to-use Telegram interface
+- 📊 Real-time proxy monitoring with Prometheus
+- 🛡️ Built-in security features (anti-replay, blocklists)
 
-## Setup
+## Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd tg_proxy
-   ```
+### 1. Clone and Setup
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+git clone <repository-url>
+cd tg_proxy
+cp .env.example .env
+```
 
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your actual values
-   ```
+### 2. Generate MTG Secret
 
-4. **Run the bot**
-   ```bash
-   python main.py
-   ```
+```bash
+# Generate a new MTG secret for your domain
+docker run --rm nineseconds/mtg:2 generate-secret your-domain.com
+```
 
-## Docker Deployment
+### 3. Configure Environment
 
-1. **Build and run with Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
+Edit `.env` file with your values:
 
-2. **View logs**
-   ```bash
-   docker-compose logs -f
-   ```
+```bash
+# Telegram Bot Configuration
+BOT_TOKEN=your_bot_token_here
+ADMIN_IDS=123456789,987654321
+PAYMENT_PROVIDER_TOKEN=your_payment_provider_token
+PROXY_SERVERS=your-server.com:443
 
-## Configuration
+# MTG Proxy Configuration  
+MTG_SECRET=ee473ce5d4958eb5f968c87680a23854a0676f6f676c652e636f6d  # Use generated secret
+MTG_HOST_PORT=443  # External port
+MTG_BIND_PORT=3128  # Internal port
 
-Edit the `.env` file with your configuration:
+# Optional: Telegram API for monitoring
+TELEGRAM_API_ID=your_api_id
+TELEGRAM_API_HASH=your_api_hash
+```
 
-- `BOT_TOKEN`: Your Telegram bot token from @BotFather
-- `ADMIN_IDS`: Comma-separated list of admin Telegram IDs
-- `PAYMENT_PROVIDER_TOKEN`: Payment provider token for Telegram payments
-- `PROXY_SERVERS`: Comma-separated list of proxy servers (host:port)
-- `MTG_SECRET`: Secret for MTG proxy server
+### 4. Deploy with Docker
+
+```bash
+# Start all services (MTG proxy, bot, Prometheus)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Check status
+docker-compose ps
+```
+
+## MTG Proxy Configuration
+
+The MTG proxy is configured via `mtg/config.toml` with advanced features:
+
+- **Anti-replay protection**: Prevents replay attacks
+- **IP blocklists**: Automatic blocking of malicious IPs
+- **Domain fronting**: Enhanced camouflage
+- **Prometheus metrics**: Real-time monitoring
+- **DNS-over-HTTPS**: Secure DNS resolution
 
 ## Bot Commands
 
+### User Commands
 - `/start` - Start the bot and see subscription options
 - `/config` - Get proxy configuration (requires active subscription)
+- `/status` - Check subscription status
+- `/help` - Show available commands
 
-## Proxy Setup
+### Admin Commands
+- `/admin` - Access admin panel
+- `/users` - Manage users
+- `/servers` - Manage proxy servers
+- `/payments` - View payment statistics
 
-The bot uses MTG (9seconds) proxy implementation. The proxy server runs on port 3128 and provides statistics on port 8080.
+## Proxy Features
 
-## Payment Integration
+### MTG v2 Advantages
+- Resource efficient (low memory footprint)
+- Single secret authentication
+- Native blocklist support
+- Proxy chaining (SOCKS5)
+- Built-in monitoring
+- Auto-updating IP blocklists
 
-The bot supports Telegram Bot Payments API for subscription management. Users can:
-- Subscribe for monthly access
-- Get a free 1-day trial
-- Automatic proxy configuration generation
+### Security Features
+- Encrypted MTProto protocol
+- Anti-replay attack protection
+- IP-based filtering
+- Domain fronting camouflage
+- Regular blocklist updates
 
-## Security
+## Monitoring & Metrics
 
-- All proxy configurations use unique secrets
-- Database stores encrypted user data
-- Admin-only access to sensitive operations
-- Regular security updates recommended
+### Prometheus Metrics
+Access metrics at `http://localhost:9090` for:
+- Client connections
+- Telegram server connections
+- Traffic volume
+- Security events
+- Performance metrics
 
-## Monitoring
+### Available Metrics
+- `mtg_client_connections` - Active client connections
+- `mtg_telegram_connections` - Connections to Telegram
+- `mtg_domain_fronting_connections` - Domain fronting usage
+- `mtg_replay_attacks` - Blocked replay attacks
+- `mtg_concurrency_limited` - Rate-limited connections
 
-- Proxy statistics available at `http://localhost:8080`
-- Bot logs all important events
-- Database tracks all payments and subscriptions
+### Health Checks
+- MTG proxy health monitoring
+- Automatic service restart on failure
+- Real-time status in bot interface
 
-## License
+## Development Setup
 
-This project is for educational purposes only. Ensure compliance with local laws and regulations.
+### Local Development
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run database migrations
+python -c "from database import init_db; init_db()"
+
+# Start the bot
+python main.py
+```
+
+### Testing
+
+```bash
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run tests
+pytest
+
+# Run with coverage
+pytest --cov=. --cov-report=html
+```
+
+## Production Deployment
+
+### Security Checklist
+- [ ] Use strong MTG secret generated for your domain
+- [ ] Configure firewall rules
+- [ ] Enable IP blocklists
+- [ ] Set up monitoring alerts
+- [ ] Regular secret rotation
+- [ ] Backup configuration
+
+### Scaling
+```bash
+# Scale bot instances
+docker-compose up -d --scale telegram-bot=3
+
+# Scale proxy servers (if using multiple)
+# Add servers to PROXY_SERVERS in .env
+```
+
+### Backup
+```bash
+# Backup database
+docker exec telegram-bot cp /app/tg_proxy.db /backup/
+
+# Backup configuration
+cp .env mtg/config.toml /backup/
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Connection Failed**
+   ```bash
+   # Check MTG proxy status
+   docker-compose logs mtg-proxy
+   
+   # Test connectivity
+   curl http://localhost:8080/metrics
+   ```
+
+2. **Invalid Secret**
+   ```bash
+   # Regenerate secret
+   docker run --rm nineseconds/mtg:2 generate-secret your-domain.com
+   ```
+
+3. **Memory Issues**
+   ```bash
+   # Check resource usage
+   docker stats
+   
+   # Reduce MTG buffer sizes in config.toml
+   ```
+
+### Debug Mode
+```bash
+# Enable debug logging
+export MTG_DEBUG=true
+docker-compose up -d
+```
+
+## Documentation
+
+For detailed setup instructions, see:
+- [MTG Setup Guide](docs/MTG_SETUP_GUIDE.md) - Complete MTG integration guide
+- [MTG Secret Guide](docs/MTG_SECRET_GUIDE.md) - Secret generation and management
+- [YooKassa Setup](docs/YOOKASSA_SETUP_GUIDE.md) - Payment integration
+
+## Security Notice
+
+This project is for educational and legitimate proxy use only. Users are responsible for compliance with local laws and regulations. The proxy should not be used for illegal activities.
+
+## Support
+
+- Check the [troubleshooting section](#troubleshooting)
+- Review logs: `docker-compose logs -f`
+- Monitor metrics: `http://localhost:9090`
+- Verify MTG status: `http://localhost:8080/metrics`

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__web-search__search",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": []
   }
