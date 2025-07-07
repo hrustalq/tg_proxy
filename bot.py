@@ -24,10 +24,10 @@ dp = Dispatcher()
 async def setup_bot_commands():
     """Setup bot commands for autocompletion"""
     commands = [
-        BotCommand(command="start", description="🚀 Start bot and view main menu"),
-        BotCommand(command="help", description="❓ Show help and available commands"),
-        BotCommand(command="config", description="⚙️ Get your proxy configuration"),
-        BotCommand(command="status", description="📊 Check subscription status")
+        BotCommand(command="start", description="🚀 Запустить бота и открыть главное меню"),
+        BotCommand(command="help", description="❓ Показать справку и доступные команды"),
+        BotCommand(command="config", description="⚙️ Получить конфигурацию прокси"),
+        BotCommand(command="status", description="📊 Проверить статус подписки")
     ]
     
     # Set commands for autocompletion
@@ -63,10 +63,10 @@ def admin_required(func):
         if not is_admin(user_id):
             if hasattr(message_or_query, 'message'):
                 # It's a CallbackQuery
-                await message_or_query.answer("❌ Access denied. Admin privileges required.", show_alert=True)
+                await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.", show_alert=True)
             else:
                 # It's a Message
-                await message_or_query.answer("❌ Access denied. Admin privileges required.")
+                await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.")
             return
         return await func(message_or_query)
     return wrapper
@@ -106,8 +106,8 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
     """Get subscription keyboard"""
     price_text = f"{settings.subscription_price:.0f} {settings.currency}" if settings.currency == "RUB" else f"${settings.subscription_price}"
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"Subscribe for {price_text}", callback_data="subscribe")],
-        [InlineKeyboardButton(text="Get Free Trial", callback_data="free_trial")]
+        [InlineKeyboardButton(text=f"Подписаться за {price_text}", callback_data="subscribe")],
+        [InlineKeyboardButton(text="Получить пробный период", callback_data="free_trial")]
     ])
     return keyboard
 
@@ -124,7 +124,7 @@ def get_proxy_config_text(server_host: str = None) -> str:
         return f"{config_text}\n\n{status_text}"
     except Exception as e:
         logger.error(f"Error generating proxy config: {e}")
-        return "❌ Error generating proxy configuration. Please try again later."
+        return "❌ Ошибка при генерации конфигурации прокси. Попробуйте позже."
 
 
 @dp.message(CommandStart())
@@ -139,23 +139,23 @@ async def start_command(message: Message):
         if await is_user_subscribed(user):
             expiration_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
             await message.answer(
-                f"Welcome back, {user.first_name}! 🎉\n\n"
-                f"✅ Your subscription is active until {expiration_date}\n\n"
-                "Use /config to get your proxy settings.",
+                f"Добро пожаловать, {user.first_name}! 🎉\n\n"
+                f"✅ Ваша подписка активна до {expiration_date}\n\n"
+                "Используйте /config для получения настроек прокси.",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")],
-                    [InlineKeyboardButton(text=f"Extend Subscription (+{settings.subscription_price:.0f} {settings.currency})", callback_data="subscribe")]
+                    [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")],
+                    [InlineKeyboardButton(text=f"Продлить подписку (+{settings.subscription_price:.0f} {settings.currency})", callback_data="subscribe")]
                 ])
             )
         else:
             await message.answer(
-                f"Welcome to Telegram Proxy Bot, {user.first_name}! 🚀\n\n"
-                "Get unlimited access to Telegram through our secure proxy servers.\n\n"
-                f"💰 Subscription: {settings.subscription_price:.0f} {settings.currency}/{settings.subscription_duration} days\n"
-                "🔒 Secure MTProto proxy protocol\n"
-                "🌍 Multiple server locations\n"
-                "⚡ High-speed connections\n\n"
-                "Choose an option below:",
+                f"Добро пожаловать в Telegram Proxy Bot, {user.first_name}! 🚀\n\n"
+                "Получите неограниченный доступ к Telegram через наши безопасные прокси-серверы.\n\n"
+                f"💰 Подписка: {settings.subscription_price:.0f} {settings.currency}/{settings.subscription_duration} дней\n"
+                "🔒 Безопасный протокол MTProto прокси\n"
+                "🌍 Множество серверов в разных локациях\n"
+                "⚡ Высокоскоростные соединения\n\n"
+                "Выберите опцию ниже:",
                 reply_markup=get_subscription_keyboard()
             )
 
@@ -164,23 +164,23 @@ async def start_command(message: Message):
 async def help_command(message: Message):
     """Handle /help command"""
     help_text = (
-        "🤖 **Telegram Proxy Bot Commands**\n\n"
-        "💡 **Tip:** Type `/` to see all available commands!\n\n"
-        "**Main Commands:**\n"
-        "🚀 `/start` - Welcome message and main menu\n"
-        "⚙️ `/config` - Get your proxy configuration\n"
-        "📊 `/status` - Check subscription status\n"
-        "❓ `/help` - Show this help message\n\n"
-        "🔗 **Features:**\n"
-        "• Secure MTProto proxy protocol\n"
-        "• Multiple server locations\n"
-        "• High-speed connections\n"
-        "• 1-day free trial for new users\n"
-        f"• Monthly subscription: {settings.subscription_price:.0f} {settings.currency}\n\n"
-        "💡 **Quick Actions:**\n"
-        "• Use buttons for easy navigation\n"
-        "• Click tg:// links for instant setup\n"
-        "• Refresh configs for better security"
+        "🤖 **Команды Telegram Proxy Bot**\n\n"
+        "💡 **Совет:** Наберите `/` чтобы увидеть все доступные команды!\n\n"
+        "**Основные команды:**\n"
+        "🚀 `/start` - Приветственное сообщение и главное меню\n"
+        "⚙️ `/config` - Получить конфигурацию прокси\n"
+        "📊 `/status` - Проверить статус подписки\n"
+        "❓ `/help` - Показать это сообщение с справкой\n\n"
+        "🔗 **Возможности:**\n"
+        "• Безопасный протокол MTProto прокси\n"
+        "• Множество серверов в разных локациях\n"
+        "• Высокоскоростные соединения\n"
+        "• 1-дневный бесплатный пробный период для новых пользователей\n"
+        f"• Месячная подписка: {settings.subscription_price:.0f} {settings.currency}\n\n"
+        "💡 **Быстрые действия:**\n"
+        "• Используйте кнопки для удобной навигации\n"
+        "• Нажмите на ссылки tg:// для мгновенной настройки\n"
+        "• Обновляйте конфигурации для лучшей безопасности"
     )
     
     async for session in get_db():
@@ -189,19 +189,19 @@ async def help_command(message: Message):
         # Add admin commands section for admin users
         if is_admin(message.from_user.id):
             admin_help = (
-                "\n\n🔐 **Admin Commands:**\n"
-                "• `/admin` - Admin panel\n"
-                "• `/admin_servers` - Manage proxy servers\n"
-                "• `/admin_stats` - View bot statistics\n"
-                "• `/admin_users` - User management\n"
-                "• `/admin_payments` - Payment overview"
+                "\n\n🔐 **Команды администратора:**\n"
+                "• `/admin` - Панель администратора\n"
+                "• `/admin_servers` - Управление прокси-серверами\n"
+                "• `/admin_stats` - Просмотр статистики бота\n"
+                "• `/admin_users` - Управление пользователями\n"
+                "• `/admin_payments` - Обзор платежей"
             )
             help_text += admin_help
         
         if await is_user_subscribed(user):
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")],
-                [InlineKeyboardButton(text="Check Status", callback_data="check_status")]
+                [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")],
+                [InlineKeyboardButton(text="Проверить статус", callback_data="check_status")]
             ])
         else:
             keyboard = get_subscription_keyboard()
@@ -230,32 +230,32 @@ async def status_command(message: Message):
             hours_left = time_left.seconds // 3600
             
             await message.answer(
-                f"📊 **Subscription Status**\n\n"
-                f"✅ Status: Active\n"
-                f"📅 Expires: {expiration_date}\n"
-                f"⏰ Time Left: {days_left} days, {hours_left} hours\n\n"
-                "Use /config to get your proxy settings.",
+                f"📊 **Статус подписки**\n\n"
+                f"✅ Статус: Активна\n"
+                f"📅 Истекает: {expiration_date}\n"
+                f"⏰ Осталось времени: {days_left} дней, {hours_left} часов\n\n"
+                "Используйте /config для получения настроек прокси.",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")],
-                    [InlineKeyboardButton(text="Extend Subscription", callback_data="subscribe")]
+                    [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")],
+                    [InlineKeyboardButton(text="Продлить подписку", callback_data="subscribe")]
                 ])
             )
         else:
             if user.subscription_until:
                 await message.answer(
-                    f"📊 **Subscription Status**\n\n"
-                    f"❌ Status: Expired\n"
-                    f"📅 Expired: {user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')}\n\n"
-                    "Subscribe to regain access to proxy servers.",
+                    f"📊 **Статус подписки**\n\n"
+                    f"❌ Статус: Истекла\n"
+                    f"📅 Истекла: {user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+                    "Подпишитесь для восстановления доступа к прокси-серверам.",
                     parse_mode="Markdown",
                     reply_markup=get_subscription_keyboard()
                 )
             else:
                 await message.answer(
-                    f"📊 **Subscription Status**\n\n"
-                    f"❌ Status: No subscription\n\n"
-                    "Subscribe or try free trial to access proxy servers.",
+                    f"📊 **Статус подписки**\n\n"
+                    f"❌ Статус: Нет подписки\n\n"
+                    "Подпишитесь или попробуйте бесплатный пробный период для доступа к прокси-серверам.",
                     parse_mode="Markdown",
                     reply_markup=get_subscription_keyboard()
                 )
@@ -271,14 +271,14 @@ async def config_command(message: Message):
             if user.subscription_until:
                 expired_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
                 await message.answer(
-                    f"❌ Your subscription expired on {expired_date}\n\n"
-                    "Please subscribe to regain access to proxy configurations.",
+                    f"❌ Ваша подписка истекла {expired_date}\n\n"
+                    "Пожалуйста, подпишитесь для восстановления доступа к конфигурациям прокси.",
                     reply_markup=get_subscription_keyboard()
                 )
             else:
                 await message.answer(
-                    "❌ You don't have an active subscription.\n\n"
-                    "Please subscribe or try free trial to get access to proxy configurations.",
+                    "❌ У вас нет активной подписки.\n\n"
+                    "Пожалуйста, подпишитесь или попробуйте бесплатный пробный период для доступа к конфигурациям прокси.",
                     reply_markup=get_subscription_keyboard()
                 )
             return
@@ -292,8 +292,8 @@ async def config_command(message: Message):
             config_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
-                [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
+                [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
+                [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
             ])
         )
 
@@ -306,19 +306,19 @@ async def subscribe_callback(callback_query: CallbackQuery):
         
         await bot.send_invoice(
             chat_id=callback_query.from_user.id,
-            title="Telegram Proxy Subscription",
-            description=f"Get {settings.subscription_duration} days access to premium proxy servers",
+            title="Подписка на Telegram Proxy",
+            description=f"Получите {settings.subscription_duration} дней доступа к премиум прокси-серверам",
             provider_token=settings.payment_provider_token,
             currency=settings.currency,
             prices=prices,
             payload=f"subscription_{callback_query.from_user.id}"
         )
         
-        await callback_query.answer("Payment invoice sent! Please complete the payment.")
+        await callback_query.answer("Счёт на оплату отправлен! Пожалуйста, завершите платёж.")
         
     except Exception as e:
         logger.error(f"Error sending invoice: {e}")
-        await callback_query.answer("Error creating payment invoice. Please try again later.", show_alert=True)
+        await callback_query.answer("Ошибка при создании счёта на оплату. Пожалуйста, попробуйте позже.", show_alert=True)
 
 
 @dp.callback_query(lambda c: c.data == "free_trial")
@@ -328,12 +328,12 @@ async def free_trial_callback(callback_query: CallbackQuery):
         user = await get_user_by_telegram_id(session, callback_query.from_user.id)
         
         if await is_user_subscribed(user):
-            await callback_query.answer("You already have an active subscription!", show_alert=True)
+            await callback_query.answer("У вас уже есть активная подписка!", show_alert=True)
             return
         
         # Check if user already had a trial (US-002: cannot get multiple free trials)
         if user.subscription_until:
-            await callback_query.answer("Free trial is only available once per user!", show_alert=True)
+            await callback_query.answer("Бесплатный пробный период доступен только один раз на пользователя!", show_alert=True)
             return
         
         # Give 1 day free trial
@@ -342,11 +342,11 @@ async def free_trial_callback(callback_query: CallbackQuery):
         
         expiration_time = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
         await callback_query.message.edit_text(
-            "🎉 Free trial activated!\n\n"
-            f"You now have 1 day of free access until {expiration_time}.\n\n"
-            "Use /config to get your proxy settings.",
+            "🎉 Бесплатный пробный период активирован!\n\n"
+            f"Теперь у вас есть 1 день бесплатного доступа до {expiration_time}.\n\n"
+            "Используйте /config для получения настроек прокси.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")]
+                [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")]
             ])
         )
     
@@ -377,7 +377,7 @@ async def refresh_config_callback(callback_query: CallbackQuery):
         user = await get_user_by_telegram_id(session, callback_query.from_user.id)
         
         if not await is_user_subscribed(user):
-            await callback_query.answer("Subscription expired!", show_alert=True)
+            await callback_query.answer("Подписка истекла!", show_alert=True)
             return
         
         # Get proxy servers from settings and use the first one as default
@@ -393,16 +393,16 @@ async def refresh_config_callback(callback_query: CallbackQuery):
                 config_text,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
-                    [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
+                    [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
+                    [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
                 ])
             )
         else:
             # Message content is the same, just answer the callback
-            await callback_query.answer("Configuration is already up to date!")
+            await callback_query.answer("Конфигурация уже обновлена!")
             return
     
-    await callback_query.answer("Configuration refreshed!")
+    await callback_query.answer("Конфигурация обновлена!")
 
 
 @dp.callback_query(lambda c: c.data == "proxy_status")
@@ -412,7 +412,7 @@ async def proxy_status_callback(callback_query: CallbackQuery):
         user = await get_user_by_telegram_id(session, callback_query.from_user.id)
         
         if not await is_user_subscribed(user):
-            await callback_query.answer("Subscription expired!", show_alert=True)
+            await callback_query.answer("Подписка истекла!", show_alert=True)
             return
         
         # Get detailed status information
@@ -421,9 +421,9 @@ async def proxy_status_callback(callback_query: CallbackQuery):
         # Check proxy health
         health_status = await mtg_monitor.health_check()
         health_emoji = "✅" if health_status else "❌"
-        health_text = "Healthy" if health_status else "Unhealthy"
+        health_text = "Работает" if health_status else "Не работает"
         
-        full_status = f"{status_text}\n\n🏥 **Health Check:** {health_emoji} {health_text}"
+        full_status = f"{status_text}\n\n🏥 **Проверка работоспособности:** {health_emoji} {health_text}"
         
         # Check if message content would be the same to avoid TelegramBadRequest
         current_text = callback_query.message.text or ""
@@ -432,16 +432,16 @@ async def proxy_status_callback(callback_query: CallbackQuery):
                 full_status,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="proxy_status")],
-                    [InlineKeyboardButton(text="🔙 Back to Config", callback_data="get_config")]
+                    [InlineKeyboardButton(text="🔄 Обновить статус", callback_data="proxy_status")],
+                    [InlineKeyboardButton(text="🔙 Вернуться к конфигурации", callback_data="get_config")]
                 ])
             )
         else:
             # Message content is the same, just answer the callback
-            await callback_query.answer("Status is already up to date!")
+            await callback_query.answer("Статус уже обновлён!")
             return
     
-    await callback_query.answer("Status updated!")
+    await callback_query.answer("Статус обновлён!")
 
 
 @dp.pre_checkout_query()
@@ -488,11 +488,11 @@ async def successful_payment(message: Message):
         await session.commit()
         
         await message.answer(
-            f"✅ Payment successful!\n\n"
-            f"Your subscription is now active until {user.subscription_until.strftime('%Y-%m-%d %H:%M')} UTC\n\n"
-            "Use /config to get your proxy settings.",
+            f"✅ Платёж успешно завершён!\n\n"
+            f"Ваша подписка активна до {user.subscription_until.strftime('%Y-%m-%d %H:%M')} UTC\n\n"
+            "Используйте /config для получения настроек прокси.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")]
+                [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")]
             ])
         )
 
@@ -504,24 +504,24 @@ async def successful_payment(message: Message):
 async def admin_command(message: Message):
     """Admin panel main menu"""
     admin_text = (
-        "🔐 **Admin Panel**\n\n"
-        "**Available Commands:**\n"
-        "`/admin_servers` - Manage proxy servers\n"
-        "`/admin_stats` - View bot statistics\n"
-        "`/admin_users` - User management\n"
-        "`/admin_payments` - Payment overview\n\n"
-        "**Quick Actions:**\n"
-        "• Add/Remove servers\n"
-        "• Monitor server status\n"
-        "• View user statistics\n"
-        "• Check payment reports"
+        "🔐 **Панель администратора**\n\n"
+        "**Доступные команды:**\n"
+        "`/admin_servers` - Управление прокси-серверами\n"
+        "`/admin_stats` - Просмотр статистики бота\n"
+        "`/admin_users` - Управление пользователями\n"
+        "`/admin_payments` - Обзор платежей\n\n"
+        "**Быстрые действия:**\n"
+        "• Добавить/удалить серверы\n"
+        "• Мониторинг статуса серверов\n"
+        "• Просмотр статистики пользователей\n"
+        "• Проверка отчётов о платежах"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🖥️ Manage Servers", callback_data="admin_servers")],
-        [InlineKeyboardButton(text="📊 View Statistics", callback_data="admin_stats")],
-        [InlineKeyboardButton(text="👥 Manage Users", callback_data="admin_users")],
-        [InlineKeyboardButton(text="💰 Payment Reports", callback_data="admin_payments")]
+        [InlineKeyboardButton(text="🖥️ Управление серверами", callback_data="admin_servers")],
+        [InlineKeyboardButton(text="📊 Просмотр статистики", callback_data="admin_stats")],
+        [InlineKeyboardButton(text="👥 Управление пользователями", callback_data="admin_users")],
+        [InlineKeyboardButton(text="💰 Отчёты о платежах", callback_data="admin_payments")]
     ])
     
     await message.answer(admin_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -561,27 +561,27 @@ async def admin_servers_command(message: Message):
             servers = result.scalars().all()
         
         # Build servers list
-        servers_text = "🖥️ **Proxy Servers Management**\n\n"
+        servers_text = "🖥️ **Управление прокси-серверами**\n\n"
         if servers:
             for i, server in enumerate(servers, 1):
-                status = "✅ Active" if server.is_active else "❌ Inactive"
-                servers_text += f"**Server {i}:**\n"
-                servers_text += f"Address: `{server.address}:{server.port}`\n"
-                servers_text += f"Status: {status}\n"
-                servers_text += f"Description: {server.description or 'N/A'}\n"
-                servers_text += f"Location: {server.location or 'N/A'}\n"
-                servers_text += f"Max Users: {server.max_users}\n\n"
+                status = "✅ Активен" if server.is_active else "❌ Неактивен"
+                servers_text += f"**Сервер {i}:**\n"
+                servers_text += f"Адрес: `{server.address}:{server.port}`\n"
+                servers_text += f"Статус: {status}\n"
+                servers_text += f"Описание: {server.description or 'Н/Д'}\n"
+                servers_text += f"Местоположение: {server.location or 'Н/Д'}\n"
+                servers_text += f"Макс. пользователей: {server.max_users}\n\n"
         else:
-            servers_text += "No servers configured.\n\n"
+            servers_text += "Серверы не настроены.\n\n"
         
-        servers_text += "Use the buttons below to manage servers:"
+        servers_text += "Используйте кнопки ниже для управления серверами:"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Add Server", callback_data="admin_add_server")],
-            [InlineKeyboardButton(text="🗑️ Remove Server", callback_data="admin_remove_server")],
-            [InlineKeyboardButton(text="⚙️ Configure Server", callback_data="admin_config_server")],
-            [InlineKeyboardButton(text="🔄 Refresh List", callback_data="admin_refresh_servers")],
-            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_main")]
+            [InlineKeyboardButton(text="➕ Добавить сервер", callback_data="admin_add_server")],
+            [InlineKeyboardButton(text="🗑️ Удалить сервер", callback_data="admin_remove_server")],
+            [InlineKeyboardButton(text="⚙️ Настроить сервер", callback_data="admin_config_server")],
+            [InlineKeyboardButton(text="🔄 Обновить список", callback_data="admin_refresh_servers")],
+            [InlineKeyboardButton(text="🔙 Назад к админ-панели", callback_data="admin_main")]
         ])
         
         await message.answer(servers_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -618,21 +618,21 @@ async def admin_stats_command(message: Message):
         total_configs = len(configs_result.scalars().all())
         
         stats_text = (
-            "📊 **Bot Statistics**\n\n"
-            f"**Users:**\n"
-            f"• Total Users: {total_users}\n"
-            f"• Active Subscribers: {active_subscribers}\n"
-            f"• Subscription Rate: {(active_subscribers/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
-            f"**Revenue:**\n"
-            f"• Total Payments: {len(completed_payments)}\n"
-            f"• Total Revenue: ${total_revenue:.2f}\n"
-            f"• Average Payment: ${(total_revenue/len(completed_payments)) if completed_payments else 0:.2f}\n\n"
-            f"**Infrastructure:**\n"
-            f"• Total Servers: {len(all_servers)}\n"
-            f"• Active Servers: {len(active_servers)}\n"
-            f"• Total Proxy Configs: {total_configs}\n"
-            f"• Configs per User: {(total_configs/active_subscribers) if active_subscribers > 0 else 0:.1f}\n\n"
-            f"**Server Status:**\n"
+            "📊 **Статистика бота**\n\n"
+            f"**Пользователи:**\n"
+            f"• Всего пользователей: {total_users}\n"
+            f"• Активных подписчиков: {active_subscribers}\n"
+            f"• Процент подписки: {(active_subscribers/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
+            f"**Доходы:**\n"
+            f"• Всего платежей: {len(completed_payments)}\n"
+            f"• Общий доход: ${total_revenue:.2f}\n"
+            f"• Средний платёж: ${(total_revenue/len(completed_payments)) if completed_payments else 0:.2f}\n\n"
+            f"**Инфраструктура:**\n"
+            f"• Всего серверов: {len(all_servers)}\n"
+            f"• Активных серверов: {len(active_servers)}\n"
+            f"• Всего конфигураций прокси: {total_configs}\n"
+            f"• Конфигураций на пользователя: {(total_configs/active_subscribers) if active_subscribers > 0 else 0:.1f}\n\n"
+            f"**Статус серверов:**\n"
         )
         
         for server in all_servers:
@@ -640,9 +640,9 @@ async def admin_stats_command(message: Message):
             stats_text += f"{status} {server.address}:{server.port}\n"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔄 Refresh Stats", callback_data="admin_refresh_stats")],
-            [InlineKeyboardButton(text="📈 Detailed Report", callback_data="admin_detailed_stats")],
-            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_main")]
+            [InlineKeyboardButton(text="🔄 Обновить статистику", callback_data="admin_refresh_stats")],
+            [InlineKeyboardButton(text="📈 Подробный отчёт", callback_data="admin_detailed_stats")],
+            [InlineKeyboardButton(text="🔙 Назад к админ-панели", callback_data="admin_main")]
         ])
         
         await message.answer(stats_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -659,25 +659,25 @@ async def admin_users_command(message: Message):
         )
         recent_users = result.scalars().all()
         
-        users_text = "👥 **User Management**\n\n"
-        users_text += "**Recent Users (Last 10):**\n\n"
+        users_text = "👥 **Управление пользователями**\n\n"
+        users_text += "**Недавние пользователи (последние 10):**\n\n"
         
         for user in recent_users:
             subscription_status = "✅" if await is_user_subscribed(user) else "❌"
-            username = user.username or "N/A"
+            username = user.username or "Н/Д"
             users_text += f"ID: {user.telegram_id}\n"
-            users_text += f"Name: {user.first_name} (@{username})\n"
-            users_text += f"Subscribed: {subscription_status}\n"
+            users_text += f"Имя: {user.first_name} (@{username})\n"
+            users_text += f"Подписан: {subscription_status}\n"
             if user.subscription_until:
-                users_text += f"Expires: {user.subscription_until.strftime('%Y-%m-%d %H:%M')}\n"
-            users_text += f"Joined: {user.created_at.strftime('%Y-%m-%d')}\n\n"
+                users_text += f"Истекает: {user.subscription_until.strftime('%Y-%m-%d %H:%M')}\n"
+            users_text += f"Присоединился: {user.created_at.strftime('%Y-%m-%d')}\n\n"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔍 Search User", callback_data="admin_search_user")],
-            [InlineKeyboardButton(text="🚫 Block User", callback_data="admin_block_user")],
-            [InlineKeyboardButton(text="✅ Unblock User", callback_data="admin_unblock_user")],
-            [InlineKeyboardButton(text="🎁 Grant Subscription", callback_data="admin_grant_sub")],
-            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_main")]
+            [InlineKeyboardButton(text="🔍 Найти пользователя", callback_data="admin_search_user")],
+            [InlineKeyboardButton(text="🚫 Заблокировать пользователя", callback_data="admin_block_user")],
+            [InlineKeyboardButton(text="✅ Разблокировать пользователя", callback_data="admin_unblock_user")],
+            [InlineKeyboardButton(text="🎁 Предоставить подписку", callback_data="admin_grant_sub")],
+            [InlineKeyboardButton(text="🔙 Назад к админ-панели", callback_data="admin_main")]
         ])
         
         await message.answer(users_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -709,26 +709,26 @@ async def admin_payments_command(message: Message):
         pending_amount = sum(p.amount for p in pending_payments)
         
         payments_text = (
-            "💰 **Payment Management**\n\n"
-            f"**Summary:**\n"
-            f"• Total Revenue: ${total_revenue:.2f}\n"
-            f"• Completed Payments: {len(completed_payments)}\n"
-            f"• Pending Payments: {len(pending_payments)} (${pending_amount:.2f})\n\n"
-            f"**Recent Payments:**\n\n"
+            "💰 **Управление платежами**\n\n"
+            f"**Сводка:**\n"
+            f"• Общий доход: ${total_revenue:.2f}\n"
+            f"• Завершённые платежи: {len(completed_payments)}\n"
+            f"• Ожидающие платежи: {len(pending_payments)} (${pending_amount:.2f})\n\n"
+            f"**Недавние платежи:**\n\n"
         )
         
         for payment in recent_payments:
             status_emoji = "✅" if payment.status == "completed" else "⏳"
             payments_text += f"{status_emoji} ${payment.amount:.2f} {payment.currency}\n"
-            payments_text += f"User ID: {payment.user_id}\n"
-            payments_text += f"Date: {payment.created_at.strftime('%Y-%m-%d %H:%M')}\n"
-            payments_text += f"Provider ID: {payment.provider_payment_id or 'N/A'}\n\n"
+            payments_text += f"ID пользователя: {payment.user_id}\n"
+            payments_text += f"Дата: {payment.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+            payments_text += f"ID провайдера: {payment.provider_payment_id or 'Н/Д'}\n\n"
         
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="📊 Payment Analytics", callback_data="admin_payment_analytics")],
-            [InlineKeyboardButton(text="🔍 Search Payment", callback_data="admin_search_payment")],
-            [InlineKeyboardButton(text="💸 Refund Payment", callback_data="admin_refund_payment")],
-            [InlineKeyboardButton(text="🔙 Back to Admin", callback_data="admin_main")]
+            [InlineKeyboardButton(text="📊 Аналитика платежей", callback_data="admin_payment_analytics")],
+            [InlineKeyboardButton(text="🔍 Найти платёж", callback_data="admin_search_payment")],
+            [InlineKeyboardButton(text="💸 Возврат платежа", callback_data="admin_refund_payment")],
+            [InlineKeyboardButton(text="🔙 Назад к админ-панели", callback_data="admin_main")]
         ])
         
         await message.answer(payments_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -781,16 +781,16 @@ async def admin_main_callback(callback_query: CallbackQuery):
 async def admin_add_server_callback(callback_query: CallbackQuery):
     """Handle add server callback"""
     await callback_query.message.edit_text(
-        "🖥️ **Add New Proxy Server**\n\n"
-        "To add a new server, send a message in this format:\n"
-        "**server_add <address> <port> [description]**\n\n"
-        "Examples:\n"
-        "• `server_add proxy.example.com 443 Main Server`\n"
-        "• `server_add 192.168.1.100 8080 Local Test Server`\n\n"
-        "The server will be added to the database and made available to users.",
+        "🖥️ **Добавить новый прокси-сервер**\n\n"
+        "Для добавления нового сервера отправьте сообщение в следующем формате:\n"
+        "**server_add <адрес> <порт> [описание]**\n\n"
+        "Примеры:\n"
+        "• `server_add proxy.example.com 443 Основной сервер`\n"
+        "• `server_add 192.168.1.100 8080 Локальный тестовый сервер`\n\n"
+        "Сервер будет добавлен в базу данных и станет доступен пользователям.",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔙 Back to Servers", callback_data="admin_servers")]
+            [InlineKeyboardButton(text="🔙 Назад к серверам", callback_data="admin_servers")]
         ])
     )
     await callback_query.answer()
@@ -806,11 +806,11 @@ async def admin_remove_server_callback(callback_query: CallbackQuery):
         
         if not active_servers:
             await callback_query.message.edit_text(
-                "🖥️ **Remove Proxy Server**\n\n"
-                "❌ No active servers to remove.",
+                "🖥️ **Удалить прокси-сервер**\n\n"
+                "❌ Нет активных серверов для удаления.",
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="🔙 Back to Servers", callback_data="admin_servers")]
+                    [InlineKeyboardButton(text="🔙 Назад к серверам", callback_data="admin_servers")]
                 ])
             )
             await callback_query.answer()
@@ -820,7 +820,7 @@ async def admin_remove_server_callback(callback_query: CallbackQuery):
         for server in active_servers:
             keyboard_buttons.append([
                 InlineKeyboardButton(
-                    text=f"❌ Remove {server.address}:{server.port}",
+                    text=f"❌ Удалить {server.address}:{server.port}",
                     callback_data=f"admin_remove_server_{server.id}"
                 )
             ])
@@ -1031,7 +1031,7 @@ async def handle_server_add_command(message: Message):
         parts = message.text.split(" ", 3)
         if len(parts) < 3:
             await message.answer(
-                "❌ Invalid format. Use: `server_add <address> <port> [description]`",
+                "❌ Неверный формат. Используйте: `server_add <адрес> <порт> [описание]`",
                 parse_mode="Markdown"
             )
             return
@@ -1049,7 +1049,7 @@ async def handle_server_add_command(message: Message):
             
             if existing_server:
                 await message.answer(
-                    f"❌ Server `{address}` already exists in the database.",
+                    f"❌ Сервер `{address}` уже существует в базе данных.",
                     parse_mode="Markdown"
                 )
                 return
@@ -1065,23 +1065,23 @@ async def handle_server_add_command(message: Message):
             await session.commit()
             
             await message.answer(
-                f"✅ **Server Added Successfully**\n\n"
-                f"Address: `{address}:{port}`\n"
-                f"Description: {description}\n"
-                f"Status: Active\n\n"
-                f"The server is now available for user configurations.",
+                f"✅ **Сервер успешно добавлен**\n\n"
+                f"Адрес: `{address}:{port}`\n"
+                f"Описание: {description}\n"
+                f"Статус: Активен\n\n"
+                f"Сервер теперь доступен для пользовательских конфигураций.",
                 parse_mode="Markdown"
             )
     
     except ValueError:
         await message.answer(
-            "❌ Invalid port number. Please use a valid integer.",
+            "❌ Неверный номер порта. Пожалуйста, используйте правильное целое число.",
             parse_mode="Markdown"
         )
     except Exception as e:
         logger.error(f"Error adding server: {e}")
         await message.answer(
-            "❌ Error adding server. Please try again.",
+            "❌ Ошибка при добавлении сервера. Пожалуйста, попробуйте снова.",
             parse_mode="Markdown"
         )
 
@@ -1094,7 +1094,7 @@ async def handle_grant_sub_command(message: Message):
         parts = message.text.split(" ")
         if len(parts) != 3:
             await message.answer(
-                "❌ Invalid format. Use: `grant_sub <user_id> <days>`",
+                "❌ Неверный формат. Используйте: `grant_sub <user_id> <дни>`",
                 parse_mode="Markdown"
             )
             return
@@ -1104,7 +1104,7 @@ async def handle_grant_sub_command(message: Message):
         
         if days <= 0:
             await message.answer(
-                "❌ Days must be a positive number.",
+                "❌ Количество дней должно быть положительным числом.",
                 parse_mode="Markdown"
             )
             return
@@ -1118,7 +1118,7 @@ async def handle_grant_sub_command(message: Message):
             
             if not user:
                 await message.answer(
-                    f"❌ User with ID `{user_id}` not found.",
+                    f"❌ Пользователь с ID `{user_id}` не найден.",
                     parse_mode="Markdown"
                 )
                 return
@@ -1136,24 +1136,24 @@ async def handle_grant_sub_command(message: Message):
             
             expiry_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
             await message.answer(
-                f"✅ **Subscription Granted**\n\n"
-                f"User: {user.first_name} (@{user.username or 'N/A'})\n"
+                f"✅ **Подписка предоставлена**\n\n"
+                f"Пользователь: {user.first_name} (@{user.username or 'Н/Д'})\n"
                 f"Telegram ID: `{user_id}`\n"
-                f"Days Added: {days}\n"
-                f"Expires: {expiry_date}\n\n"
-                f"The user now has access to proxy configurations.",
+                f"Добавлено дней: {days}\n"
+                f"Истекает: {expiry_date}\n\n"
+                f"Пользователь теперь имеет доступ к конфигурациям прокси.",
                 parse_mode="Markdown"
             )
     
     except ValueError:
         await message.answer(
-            "❌ Invalid user ID or days. Please use valid integers.",
+            "❌ Неверный ID пользователя или количество дней. Пожалуйста, используйте правильные целые числа.",
             parse_mode="Markdown"
         )
     except Exception as e:
         logger.error(f"Error granting subscription: {e}")
         await message.answer(
-            "❌ Error granting subscription. Please try again.",
+            "❌ Ошибка при предоставлении подписки. Пожалуйста, попробуйте снова.",
             parse_mode="Markdown"
         )
 
@@ -1169,31 +1169,31 @@ async def handle_unknown_command(message: Message):
     user_is_admin = is_admin(message.from_user.id)
     
     unknown_command_text = (
-        f"❓ **Unknown Command: `{command}`**\n\n"
-        "I don't recognize that command. Here are the available commands:\n\n"
-        "**Main Commands:**\n"
-        "• `/start` - Start bot and view main menu\n"
-        "• `/help` - Show help and available commands\n"
-        "• `/config` - Get your proxy configuration\n"
-        "• `/status` - Check subscription status\n"
+        f"❓ **Неизвестная команда: `{command}`**\n\n"
+        "Я не распознаю эту команду. Вот доступные команды:\n\n"
+        "**Основные команды:**\n"
+        "• `/start` - Запустить бота и открыть главное меню\n"
+        "• `/help` - Показать справку и доступные команды\n"
+        "• `/config` - Получить конфигурацию прокси\n"
+        "• `/status` - Проверить статус подписки\n"
     )
     
     # Add admin commands for admin users
     if user_is_admin:
         unknown_command_text += (
-            "\n**Admin Commands:**\n"
-            "• `/admin` - Admin panel\n"
-            "• `/admin_servers` - Manage proxy servers\n"
-            "• `/admin_stats` - View bot statistics\n"
-            "• `/admin_users` - User management\n"
-            "• `/admin_payments` - Payment overview\n"
+            "\n**Команды администратора:**\n"
+            "• `/admin` - Панель администратора\n"
+            "• `/admin_servers` - Управление прокси-серверами\n"
+            "• `/admin_stats` - Просмотр статистики бота\n"
+            "• `/admin_users` - Управление пользователями\n"
+            "• `/admin_payments` - Обзор платежей\n"
         )
     
-    unknown_command_text += "\n💡 **Tip:** Type `/` to see commands with autocompletion!"
+    unknown_command_text += "\n💡 **Совет:** Наберите `/` чтобы увидеть команды с автодополнением!"
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📋 Show Help", callback_data="show_help")],
-        [InlineKeyboardButton(text="🚀 Go to Main Menu", callback_data="show_start")]
+        [InlineKeyboardButton(text="📋 Показать справку", callback_data="show_help")],
+        [InlineKeyboardButton(text="🚀 Перейти в главное меню", callback_data="show_start")]
     ])
     
     await message.answer(unknown_command_text, parse_mode="Markdown", reply_markup=keyboard)
@@ -1223,17 +1223,17 @@ async def show_start_callback(callback_query: CallbackQuery):
 async def handle_text_message(message: Message):
     """Handle any other text messages with guidance"""
     guidance_text = (
-        "👋 Hi! I'm a Telegram Proxy Bot.\n\n"
-        "💡 **To get started:**\n"
-        "• Type `/start` to see the main menu\n"
-        "• Type `/help` to see all available commands\n"
-        "• Type `/` to see commands with autocompletion\n\n"
-        "🔧 **Quick Actions:**"
+        "👋 Привет! Я Telegram Proxy Bot.\n\n"
+        "💡 **Чтобы начать:**\n"
+        "• Наберите `/start` чтобы увидеть главное меню\n"
+        "• Наберите `/help` чтобы увидеть все доступные команды\n"
+        "• Наберите `/` чтобы увидеть команды с автодополнением\n\n"
+        "🔧 **Быстрые действия:**"
     )
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🚀 Start Bot", callback_data="show_start")],
-        [InlineKeyboardButton(text="📋 Show Help", callback_data="show_help")]
+        [InlineKeyboardButton(text="🚀 Запустить бота", callback_data="show_start")],
+        [InlineKeyboardButton(text="📋 Показать справку", callback_data="show_help")]
     ])
     
     await message.answer(guidance_text, parse_mode="Markdown", reply_markup=keyboard)

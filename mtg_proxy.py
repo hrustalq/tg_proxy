@@ -140,23 +140,22 @@ class MTGProxyManager:
         host = server_host or self.external_host
         port = settings.mtg_host_port
         
-        return f"""🔒 **MTProto Proxy Configuration**
+        return f"""🔒 **Конфигурация MTProto прокси**
 
-**Server:** `{host}`
-**Port:** `{port}`
-**Secret:** `{self.secret}`
+**Сервер:** `{host}`
+**Порт:** `{port}`
+**Секретный ключ:** `{self.secret}`
 
-**Quick Connect Links:**
-• [Open in Telegram](tg://proxy?server={host}&port={port}&secret={self.secret})
-• [Web Link](https://t.me/proxy?server={host}&port={port}&secret={self.secret})
+**Быстрые ссылки для подключения:**
+• [Открыть в Telegram](tg://proxy?server={host}&port={port}&secret={self.secret})
 
-**Manual Setup:**
-1. Open Telegram Settings
-2. Go to Data and Storage > Proxy Settings
-3. Add Proxy > MTProto
-4. Enter the server details above
+**Ручная настройка:**
+1. Откройте настройки Telegram
+2. Перейдите в "Данные и память" > "Настройки прокси"
+3. Добавить прокси > MTProto
+4. Введите данные сервера выше
 
-**QR Code:** [Generate QR Code](https://api.qrserver.com/v1/create-qr-code/?data=https://t.me/proxy?server={host}&port={port}&secret={self.secret}&size=300x300)
+**QR код:** [Создать QR код](https://api.qrserver.com/v1/create-qr-code/?data=https://t.me/proxy?server={host}&port={port}&secret={self.secret}&size=300x300)
 """
 
 
@@ -202,14 +201,14 @@ class MTGMonitor:
         metrics = self.get_metrics()
         
         if not metrics:
-            return "❌ **Proxy Status:** Unavailable"
+            return "❌ **Статус прокси:** Недоступен"
         
-        status_text = "📊 **MTG Proxy Status**\n\n"
-        status_text += f"🔌 **Client Connections:** {int(metrics.get('mtg_client_connections', 0))}\n"
-        status_text += f"📡 **Telegram Connections:** {int(metrics.get('mtg_telegram_connections', 0))}\n"
+        status_text = "📊 **Статус MTG прокси**\n\n"
+        status_text += f"🔌 **Подключения клиентов:** {int(metrics.get('mtg_client_connections', 0))}\n"
+        status_text += f"📡 **Подключения к Telegram:** {int(metrics.get('mtg_telegram_connections', 0))}\n"
         status_text += f"🌐 **Domain Fronting:** {int(metrics.get('mtg_domain_fronting_connections', 0))}\n"
-        status_text += f"🛡️ **Replay Attacks Blocked:** {int(metrics.get('mtg_replay_attacks', 0))}\n"
-        status_text += f"⚠️ **Concurrency Limited:** {int(metrics.get('mtg_concurrency_limited', 0))}\n"
+        status_text += f"🛡️ **Заблокировано replay-атак:** {int(metrics.get('mtg_replay_attacks', 0))}\n"
+        status_text += f"⚠️ **Ограничено по конкуренции:** {int(metrics.get('mtg_concurrency_limited', 0))}\n"
         
         return status_text
     

@@ -9,11 +9,11 @@ logger = logging.getLogger(__name__)
 
 async def main():
     """Main function to run the bot"""
-    logger.info("Starting Telegram Proxy Bot...")
+    logger.info("Запуск Telegram Proxy Bot...")
     
     # Initialize database
     await init_db()
-    logger.info("Database initialized")
+    logger.info("База данных инициализирована")
     
     # Setup bot commands for autocompletion
     await setup_bot_commands()
