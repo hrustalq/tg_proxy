@@ -413,9 +413,54 @@ async def get_config_callback(callback_query: CallbackQuery):
 async def check_status_callback(callback_query: CallbackQuery):
     """Handle check status callback"""
     try:
-        message = callback_query.message
-        message.from_user = callback_query.from_user
-        await status_command(message)
+        async for session in get_db():
+            user = await get_user_by_telegram_id(session, callback_query.from_user.id)
+            
+            if await is_user_subscribed(user):
+                expiration_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
+                
+                # Handle timezone-aware calculation
+                current_time = datetime.now(timezone.utc)
+                if user.subscription_until.tzinfo is None:
+                    subscription_time = user.subscription_until.replace(tzinfo=timezone.utc)
+                else:
+                    subscription_time = user.subscription_until
+                
+                time_left = subscription_time - current_time
+                days_left = time_left.days
+                hours_left = time_left.seconds // 3600
+                
+                await callback_query.message.edit_text(
+                    f"📊 **Статус подписки**\n\n"
+                    f"✅ Статус: Активна\n"
+                    f"📅 Истекает: {expiration_date}\n"
+                    f"⏰ Осталось времени: {days_left} дней, {hours_left} часов\n\n"
+                    "Используйте /config для получения настроек прокси.",
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")],
+                        [InlineKeyboardButton(text="Продлить подписку", callback_data="subscribe")]
+                    ])
+                )
+            else:
+                if user.subscription_until:
+                    await callback_query.message.edit_text(
+                        f"📊 **Статус подписки**\n\n"
+                        f"❌ Статус: Истекла\n"
+                        f"📅 Истекла: {user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+                        "Подпишитесь для восстановления доступа к прокси-серверам.",
+                        parse_mode="Markdown",
+                        reply_markup=get_subscription_keyboard()
+                    )
+                else:
+                    await callback_query.message.edit_text(
+                        f"📊 **Статус подписки**\n\n"
+                        f"❌ Статус: Нет подписки\n\n"
+                        "Подпишитесь или попробуйте бесплатный пробный период для доступа к прокси-серверам.",
+                        parse_mode="Markdown",
+                        reply_markup=get_subscription_keyboard()
+                    )
+        
         await callback_query.answer()
     except Exception as e:
         logger.error(f"Error in check_status_callback: {e}")
