@@ -7,15 +7,10 @@ services:
       - "${MTG_HOST_PORT:-443}:${MTG_BIND_PORT:-3128}"
       - "8080:8080"
     volumes:
-      - ./mtg/start.sh:/start.sh:ro
+      - ./mtg/config.toml:/config.toml:ro
       - ./mtg/blocklist.txt:/blocklist.txt:ro
-    entrypoint: ["/bin/sh", "/start.sh"]
     networks:
       - tg-proxy-network
-    environment:
-      - MTG_SECRET=${MTG_SECRET}
-      - MTG_BIND_PORT=${MTG_BIND_PORT:-3128}
-      - MTG_DEBUG=${MTG_DEBUG:-false}
     healthcheck:
       test: ["CMD", "pgrep", "mtg"]
       interval: 30s
