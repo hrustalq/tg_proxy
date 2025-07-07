@@ -14,7 +14,7 @@ from mtg_proxy import mtg_proxy_manager, mtg_monitor
 import secrets
 import string
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 bot = Bot(token=settings.bot_token)
@@ -30,8 +30,10 @@ def is_admin(user_id: int) -> bool:
     """Check if user is an admin"""
     try:
         admin_ids = settings.get_admin_ids()
+        logger.debug(f"Checking admin access for user {user_id}. Admin IDs: {admin_ids}")
         return user_id in admin_ids
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error checking admin access: {e}")
         return False
 
 
@@ -40,10 +42,12 @@ def admin_required(func):
     async def wrapper(message_or_query, **kwargs):
         user_id = message_or_query.from_user.id
         if not is_admin(user_id):
-            if hasattr(message_or_query, 'answer'):
-                await message_or_query.answer("❌ Access denied. Admin privileges required.")
-            else:
+            if hasattr(message_or_query, 'message'):
+                # It's a CallbackQuery
                 await message_or_query.answer("❌ Access denied. Admin privileges required.", show_alert=True)
+            else:
+                # It's a Message
+                await message_or_query.answer("❌ Access denied. Admin privileges required.")
             return
         return await func(message_or_query)
     return wrapper
@@ -81,8 +85,9 @@ async def is_user_subscribed(user: User) -> bool:
 
 def get_subscription_keyboard() -> InlineKeyboardMarkup:
     """Get subscription keyboard"""
+    price_text = f"{settings.subscription_price:.0f} {settings.currency}" if settings.currency == "RUB" else f"${settings.subscription_price}"
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"Subscribe for ${settings.subscription_price}", callback_data="subscribe")],
+        [InlineKeyboardButton(text=f"Subscribe for {price_text}", callback_data="subscribe")],
         [InlineKeyboardButton(text="Get Free Trial", callback_data="free_trial")]
     ])
     return keyboard
@@ -120,14 +125,14 @@ async def start_command(message: Message):
                 "Use /config to get your proxy settings.",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="Get Proxy Config", callback_data="get_config")],
-                    [InlineKeyboardButton(text=f"Extend Subscription (+${settings.subscription_price})", callback_data="subscribe")]
+                    [InlineKeyboardButton(text=f"Extend Subscription (+{settings.subscription_price:.0f} {settings.currency})", callback_data="subscribe")]
                 ])
             )
         else:
             await message.answer(
                 f"Welcome to Telegram Proxy Bot, {user.first_name}! 🚀\n\n"
                 "Get unlimited access to Telegram through our secure proxy servers.\n\n"
-                f"💰 Subscription: ${settings.subscription_price}/{settings.subscription_duration} days\n"
+                f"💰 Subscription: {settings.subscription_price:.0f} {settings.currency}/{settings.subscription_duration} days\n"
                 "🔒 Secure MTProto proxy protocol\n"
                 "🌍 Multiple server locations\n"
                 "⚡ High-speed connections\n\n"
@@ -150,7 +155,7 @@ async def help_command(message: Message):
         "• Multiple server locations\n"
         "• High-speed connections\n"
         "• 1-day free trial for new users\n"
-        f"• Monthly subscription: ${settings.subscription_price}\n\n"
+        f"• Monthly subscription: {settings.subscription_price:.0f} {settings.currency}\n\n"
         "💡 **Quick Actions:**\n"
         "• Use buttons for easy navigation\n"
         "• Click tg:// links for instant setup\n"
@@ -271,7 +276,7 @@ async def subscribe_callback(callback_query: CallbackQuery):
             title="Telegram Proxy Subscription",
             description=f"Get {settings.subscription_duration} days access to premium proxy servers",
             provider_token=settings.payment_provider_token,
-            currency="RUB",  # YooKassa typically uses RUB
+            currency=settings.currency,
             prices=prices,
             payload=f"subscription_{callback_query.from_user.id}"
         )
@@ -318,7 +323,10 @@ async def free_trial_callback(callback_query: CallbackQuery):
 @dp.callback_query(lambda c: c.data == "get_config")
 async def get_config_callback(callback_query: CallbackQuery):
     """Handle get config callback"""
-    await config_command(callback_query.message)
+    # Create a modified message object with the correct user info
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await config_command(message)
     await callback_query.answer()
 
 
@@ -344,14 +352,22 @@ async def refresh_config_callback(callback_query: CallbackQuery):
         server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
         
         config_text = get_proxy_config_text(server_host)
-        await callback_query.message.edit_text(
-            config_text,
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
-                [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
-            ])
-        )
+        
+        # Check if message content would be the same to avoid TelegramBadRequest
+        current_text = callback_query.message.text or ""
+        if current_text != config_text:
+            await callback_query.message.edit_text(
+                config_text,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="Refresh Config", callback_data="refresh_config")],
+                    [InlineKeyboardButton(text="Proxy Status", callback_data="proxy_status")]
+                ])
+            )
+        else:
+            # Message content is the same, just answer the callback
+            await callback_query.answer("Configuration is already up to date!")
+            return
     
     await callback_query.answer("Configuration refreshed!")
 
@@ -376,14 +392,21 @@ async def proxy_status_callback(callback_query: CallbackQuery):
         
         full_status = f"{status_text}\n\n🏥 **Health Check:** {health_emoji} {health_text}"
         
-        await callback_query.message.edit_text(
-            full_status,
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="proxy_status")],
-                [InlineKeyboardButton(text="🔙 Back to Config", callback_data="get_config")]
-            ])
-        )
+        # Check if message content would be the same to avoid TelegramBadRequest
+        current_text = callback_query.message.text or ""
+        if current_text != full_status:
+            await callback_query.message.edit_text(
+                full_status,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Refresh Status", callback_data="proxy_status")],
+                    [InlineKeyboardButton(text="🔙 Back to Config", callback_data="get_config")]
+                ])
+            )
+        else:
+            # Message content is the same, just answer the callback
+            await callback_query.answer("Status is already up to date!")
+            return
     
     await callback_query.answer("Status updated!")
 

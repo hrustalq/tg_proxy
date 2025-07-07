@@ -46,7 +46,7 @@ class Payment(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Float, nullable=False)
-    currency = Column(String(10), default="USD")
+    currency = Column(String(10), default="RUB")
     status = Column(String(50), default="pending")
     provider_payment_id = Column(String(255))
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

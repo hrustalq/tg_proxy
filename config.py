@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     proxy_servers: str
     subscription_price: float = 5.00
     subscription_duration: int = 30
+    currency: str = "RUB"
     
     # MTG Proxy Configuration
     mtg_secret: str
