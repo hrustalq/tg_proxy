@@ -364,10 +364,45 @@ async def free_trial_callback(callback_query: CallbackQuery):
 async def get_config_callback(callback_query: CallbackQuery):
     """Handle get config callback"""
     try:
-        # Create a modified message object with the correct user info
-        message = callback_query.message
-        message.from_user = callback_query.from_user
-        await config_command(message)
+        async for session in get_db():
+            user = await get_user_by_telegram_id(session, callback_query.from_user.id)
+            
+            if not await is_user_subscribed(user):
+                if user.subscription_until:
+                    expired_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
+                    await callback_query.message.edit_text(
+                        f"❌ Ваша подписка истекла {expired_date}\n\n"
+                        "Пожалуйста, подпишитесь для восстановления доступа к конфигурациям прокси.",
+                        reply_markup=get_subscription_keyboard()
+                    )
+                else:
+                    await callback_query.message.edit_text(
+                        "❌ У вас нет активной подписки.\n\n"
+                        "Пожалуйста, подпишитесь или попробуйте бесплатный пробный период для доступа к конфигурациям прокси.",
+                        reply_markup=get_subscription_keyboard()
+                    )
+                await callback_query.answer()
+                return
+            
+            # Get proxy servers from settings and use the first one as default
+            proxy_servers = settings.get_proxy_servers()
+            server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
+            
+            config_text = get_proxy_config_text(server_host)
+            
+            # Get Telegram proxy URL for the button
+            telegram_proxy_url = mtg_proxy_manager.get_telegram_proxy_url(server_host)
+            
+            await callback_query.message.edit_text(
+                config_text,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
+                    [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
+                    [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
+                ])
+            )
+        
         await callback_query.answer()
     except Exception as e:
         logger.error(f"Error in get_config_callback: {e}")
