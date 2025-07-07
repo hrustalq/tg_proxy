@@ -120,12 +120,16 @@ def get_subscription_keyboard() -> InlineKeyboardMarkup:
 def get_proxy_config_text(server_host: str = None) -> str:
     """Generate proxy configuration text using MTG proxy manager"""
     try:
+        logger.debug(f"Generating proxy config for server_host: {server_host}")
         # Get MTG proxy configuration
         config_text = mtg_proxy_manager.get_proxy_config_text(server_host)
+        logger.debug(f"Successfully generated config text: {len(config_text)} characters")
         
         return f"{config_text}"
     except Exception as e:
         logger.error(f"Error generating proxy config: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return "❌ Ошибка при генерации конфигурации прокси. Попробуйте позже."
 
 
@@ -388,7 +392,13 @@ async def get_config_callback(callback_query: CallbackQuery):
             proxy_servers = settings.get_proxy_servers()
             server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
             
-            config_text = get_proxy_config_text(server_host)
+            try:
+                config_text = get_proxy_config_text(server_host)
+                logger.info(f"Generated config text for user {callback_query.from_user.id}")
+            except Exception as config_error:
+                logger.error(f"Error generating config for user {callback_query.from_user.id}: {config_error}")
+                await callback_query.answer("❌ Ошибка генерации конфигурации", show_alert=True)
+                return
             
             # Get Telegram proxy URL for the button
             telegram_proxy_url = mtg_proxy_manager.get_telegram_proxy_url(server_host)
