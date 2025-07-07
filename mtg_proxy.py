@@ -146,17 +146,18 @@ class MTGProxyManager:
 **Порт:** `{port}`
 **Секретный ключ:** `{self.secret}`
 
-**Быстрые ссылки для подключения:**
-• [Открыть в Telegram](tg://proxy?server={host}&port={port}&secret={self.secret})
-
 **Ручная настройка:**
 1. Откройте настройки Telegram
 2. Перейдите в "Данные и память" > "Настройки прокси"
 3. Добавить прокси > MTProto
 4. Введите данные сервера выше
-
-**QR код:** [Создать QR код](https://api.qrserver.com/v1/create-qr-code/?data=https://t.me/proxy?server={host}&port={port}&secret={self.secret}&size=300x300)
 """
+    
+    def get_telegram_proxy_url(self, server_host: Optional[str] = None) -> str:
+        """Get Telegram proxy URL for direct connection"""
+        host = server_host or self.external_host
+        port = settings.mtg_host_port
+        return f"tg://proxy?server={host}&port={port}&secret={self.secret}"
 
 
 class MTGMonitor:

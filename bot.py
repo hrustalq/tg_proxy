@@ -283,10 +283,15 @@ async def config_command(message: Message):
         server_host = proxy_servers[0].split(':')[0] if proxy_servers else None
         
         config_text = get_proxy_config_text(server_host)
+        
+        # Get Telegram proxy URL for the button
+        telegram_proxy_url = mtg_proxy_manager.get_telegram_proxy_url(server_host)
+        
         await message.answer(
             config_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
                 [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
                 [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
             ])
@@ -391,6 +396,9 @@ async def refresh_config_callback(callback_query: CallbackQuery):
         
         config_text = get_proxy_config_text(server_host)
         
+        # Get Telegram proxy URL for the button
+        telegram_proxy_url = mtg_proxy_manager.get_telegram_proxy_url(server_host)
+        
         # Check if message content would be the same to avoid TelegramBadRequest
         current_text = callback_query.message.text or ""
         if current_text != config_text:
@@ -398,6 +406,7 @@ async def refresh_config_callback(callback_query: CallbackQuery):
                 config_text,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
                     [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
                     [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
                 ])
