@@ -7,18 +7,21 @@ services:
       - "${MTG_HOST_PORT:-443}:${MTG_BIND_PORT:-3128}"
       - "8080:8080"
     volumes:
-      - ./mtg/config.toml:/config.toml:ro
+      - ./mtg/start.sh:/start.sh:ro
       - ./mtg/blocklist.txt:/blocklist.txt:ro
-    command: run /config.toml
+    command: sh /start.sh
     networks:
       - tg-proxy-network
     environment:
+      - MTG_SECRET=${MTG_SECRET}
+      - MTG_BIND_PORT=${MTG_BIND_PORT:-3128}
       - MTG_DEBUG=${MTG_DEBUG:-false}
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics"]
+      test: ["CMD", "pgrep", "mtg"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
   telegram-bot:
     build: .
