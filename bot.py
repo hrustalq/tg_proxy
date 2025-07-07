@@ -46,6 +46,13 @@ def generate_proxy_secret() -> str:
     return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
 
 
+def escape_markdown(text: str) -> str:
+    """Escape special markdown characters in text"""
+    if not text:
+        return ""
+    return text.replace('*', '\\*').replace('_', '\\_').replace('[', '\\[').replace(']', '\\]').replace('`', '\\`')
+
+
 def is_admin(user_id: int) -> bool:
     """Check if user is an admin"""
     try:
@@ -776,8 +783,12 @@ async def admin_users_command(message: Message):
         for user in recent_users:
             subscription_status = "✅" if await is_user_subscribed(user) else "❌"
             username = user.username or "Н/Д"
-            users_text += f"ID: {user.telegram_id}\n"
-            users_text += f"Имя: {user.first_name} (@{username})\n"
+            # Escape markdown characters in user data
+            safe_first_name = escape_markdown(user.first_name or "Н/Д")
+            safe_username = escape_markdown(username)
+            
+            users_text += f"ID: `{user.telegram_id}`\n"
+            users_text += f"Имя: {safe_first_name} (@{safe_username})\n"
             users_text += f"Подписан: {subscription_status}\n"
             if user.subscription_until:
                 users_text += f"Истекает: {user.subscription_until.strftime('%Y-%m-%d %H:%M')}\n"
@@ -1261,9 +1272,11 @@ async def handle_grant_sub_command(message: Message):
             await session.commit()
             
             expiry_date = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
+            safe_first_name = escape_markdown(user.first_name or "Н/Д")
+            safe_username = escape_markdown(user.username or "Н/Д")
             await message.answer(
                 f"✅ **Подписка предоставлена**\n\n"
-                f"Пользователь: {user.first_name} (@{user.username or 'Н/Д'})\n"
+                f"Пользователь: {safe_first_name} (@{safe_username})\n"
                 f"Telegram ID: `{user_id}`\n"
                 f"Добавлено дней: {days}\n"
                 f"Истекает: {expiry_date}\n\n"
