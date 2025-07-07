@@ -170,7 +170,7 @@ async def help_command(message: Message):
         "• Безопасный протокол MTProto прокси\n"
         "• Множество серверов в разных локациях\n"
         "• Высокоскоростные соединения\n"
-        "• 1-дневный бесплатный пробный период для новых пользователей\n"
+        "• 30-дневный бесплатный пробный период для новых пользователей\n"
         f"• Месячная подписка: {settings.subscription_price:.0f} {settings.currency}\n\n"
         "💡 **Быстрые действия:**\n"
         "• Используйте кнопки для удобной навигации\n"
@@ -336,14 +336,14 @@ async def free_trial_callback(callback_query: CallbackQuery):
             await callback_query.answer("Бесплатный пробный период доступен только один раз на пользователя!", show_alert=True)
             return
         
-        # Give 1 day free trial
-        user.subscription_until = datetime.now(timezone.utc) + timedelta(days=1)
+        # Give 30 day free trial
+        user.subscription_until = datetime.now(timezone.utc) + timedelta(days=30)
         await session.commit()
         
         expiration_time = user.subscription_until.strftime('%Y-%m-%d %H:%M UTC')
         await callback_query.message.edit_text(
             "🎉 Бесплатный пробный период активирован!\n\n"
-            f"Теперь у вас есть 1 день бесплатного доступа до {expiration_time}.\n\n"
+            f"Теперь у вас есть 30 дней бесплатного доступа до {expiration_time}.\n\n"
             "Используйте /config для получения настроек прокси.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="Получить конфигурацию прокси", callback_data="get_config")]
