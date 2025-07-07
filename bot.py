@@ -61,14 +61,12 @@ def admin_required(func):
     async def wrapper(message_or_query, **kwargs):
         user_id = message_or_query.from_user.id
         if not is_admin(user_id):
-            if hasattr(message_or_query, 'message'):
-                # It's a CallbackQuery
+            if isinstance(message_or_query, CallbackQuery):
                 await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.", show_alert=True)
             else:
-                # It's a Message
                 await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.")
             return
-        return await func(message_or_query)
+        return await func(message_or_query, **kwargs)
     return wrapper
 
 
@@ -118,10 +116,7 @@ def get_proxy_config_text(server_host: str = None) -> str:
         # Get MTG proxy configuration
         config_text = mtg_proxy_manager.get_proxy_config_text(server_host)
         
-        # Add status information
-        status_text = mtg_monitor.get_status_text()
-        
-        return f"{config_text}\n\n{status_text}"
+        return f"{config_text}"
     except Exception as e:
         logger.error(f"Error generating proxy config: {e}")
         return "❌ Ошибка при генерации конфигурации прокси. Попробуйте позже."
@@ -356,18 +351,28 @@ async def free_trial_callback(callback_query: CallbackQuery):
 @dp.callback_query(lambda c: c.data == "get_config")
 async def get_config_callback(callback_query: CallbackQuery):
     """Handle get config callback"""
-    # Create a modified message object with the correct user info
-    message = callback_query.message
-    message.from_user = callback_query.from_user
-    await config_command(message)
-    await callback_query.answer()
+    try:
+        # Create a modified message object with the correct user info
+        message = callback_query.message
+        message.from_user = callback_query.from_user
+        await config_command(message)
+        await callback_query.answer()
+    except Exception as e:
+        logger.error(f"Error in get_config_callback: {e}")
+        await callback_query.answer("❌ Ошибка при получении конфигурации", show_alert=True)
 
 
 @dp.callback_query(lambda c: c.data == "check_status")
 async def check_status_callback(callback_query: CallbackQuery):
     """Handle check status callback"""
-    await status_command(callback_query.message)
-    await callback_query.answer()
+    try:
+        message = callback_query.message
+        message.from_user = callback_query.from_user
+        await status_command(message)
+        await callback_query.answer()
+    except Exception as e:
+        logger.error(f"Error in check_status_callback: {e}")
+        await callback_query.answer("❌ Ошибка при проверке статуса", show_alert=True)
 
 
 @dp.callback_query(lambda c: c.data == "refresh_config")
@@ -830,9 +835,9 @@ async def admin_remove_server_callback(callback_query: CallbackQuery):
         ])
         
         await callback_query.message.edit_text(
-            "🖥️ **Remove Proxy Server**\n\n"
-            "⚠️ **Warning:** Removing a server will disable it for all users.\n\n"
-            "Select a server to remove:",
+            "🖥️ **Удалить прокси-сервер**\n\n"
+            "⚠️ **Внимание:** Удаление сервера отключит его для всех пользователей.\n\n"
+            "Выберите сервер для удаления:",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
         )
@@ -851,7 +856,7 @@ async def admin_remove_server_confirm_callback(callback_query: CallbackQuery):
         server = result.scalar_one_or_none()
         
         if not server:
-            await callback_query.answer("Server not found!", show_alert=True)
+            await callback_query.answer("Сервер не найден!", show_alert=True)
             return
         
         # Deactivate server instead of deleting
@@ -859,12 +864,12 @@ async def admin_remove_server_confirm_callback(callback_query: CallbackQuery):
         await session.commit()
         
         await callback_query.message.edit_text(
-            f"✅ **Server Removed Successfully**\n\n"
-            f"Server `{server.address}:{server.port}` has been deactivated.\n"
-            f"Users will no longer receive configurations for this server.",
+            f"✅ **Сервер успешно удален**\n\n"
+            f"Сервер `{server.address}:{server.port}` был деактивирован.\n"
+            f"Пользователи больше не будут получать конфигурации для этого сервера.",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔙 Back to Servers", callback_data="admin_servers")]
+                [InlineKeyboardButton(text="🔙 Назад к серверам", callback_data="admin_servers")]
             ])
         )
     
@@ -926,7 +931,7 @@ async def admin_config_server_detail_callback(callback_query: CallbackQuery):
         server = result.scalar_one_or_none()
         
         if not server:
-            await callback_query.answer("Server not found!", show_alert=True)
+            await callback_query.answer("Сервер не найден!", show_alert=True)
             return
         
         status = "✅ Active" if server.is_active else "❌ Inactive"
@@ -970,7 +975,7 @@ async def admin_toggle_server_callback(callback_query: CallbackQuery):
         server = result.scalar_one_or_none()
         
         if not server:
-            await callback_query.answer("Server not found!", show_alert=True)
+            await callback_query.answer("Сервер не найден!", show_alert=True)
             return
         
         # Toggle server status
@@ -1156,6 +1161,255 @@ async def handle_grant_sub_command(message: Message):
             "❌ Ошибка при предоставлении подписки. Пожалуйста, попробуйте снова.",
             parse_mode="Markdown"
         )
+
+
+# ====== MISSING ADMIN HANDLERS ======
+
+@dp.callback_query(lambda c: c.data == "admin_detailed_stats")
+@admin_required
+async def admin_detailed_stats_callback(callback_query: CallbackQuery):
+    """Handle detailed stats callback"""
+    async for session in get_db():
+        try:
+            # Get detailed statistics
+            total_users_result = await session.execute(select(User))
+            all_users = total_users_result.scalars().all()
+            
+            active_users_result = await session.execute(
+                select(User).where(User.subscription_until > datetime.now(timezone.utc))
+            )
+            active_users = active_users_result.scalars().all()
+            
+            payments_result = await session.execute(
+                select(Payment).where(Payment.status == "completed")
+            )
+            payments = payments_result.scalars().all()
+            
+            # Calculate detailed metrics
+            total_users = len(all_users)
+            active_subscribers = len(active_users)
+            total_revenue = sum(p.amount for p in payments)
+            
+            # Get user statistics by creation date
+            recent_users = [u for u in all_users if u.created_at > datetime.now(timezone.utc) - timedelta(days=7)]
+            
+            # Get payment statistics
+            recent_payments = [p for p in payments if p.created_at > datetime.now(timezone.utc) - timedelta(days=7)]
+            
+            detailed_text = (
+                f"📈 **Подробная статистика**\n\n"
+                f"**Пользователи:**\n"
+                f"• Всего пользователей: {total_users}\n"
+                f"• Активных подписчиков: {active_subscribers}\n"
+                f"• Новых за неделю: {len(recent_users)}\n"
+                f"• Процент конверсии: {(active_subscribers/total_users*100) if total_users > 0 else 0:.1f}%\n\n"
+                f"**Доходы:**\n"
+                f"• Общий доход: ${total_revenue:.2f}\n"
+                f"• Доход за неделю: ${sum(p.amount for p in recent_payments):.2f}\n"
+                f"• Средний платёж: ${(total_revenue/len(payments)) if payments else 0:.2f}\n"
+                f"• Платежей за неделю: {len(recent_payments)}\n\n"
+                f"**Тренды:**\n"
+                f"• Рост пользователей: {(len(recent_users)/7):.1f} в день\n"
+                f"• Рост доходов: ${(sum(p.amount for p in recent_payments)/7):.2f} в день\n"
+            )
+            
+            await callback_query.message.edit_text(
+                detailed_text,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_detailed_stats")],
+                    [InlineKeyboardButton(text="🔙 Назад к статистике", callback_data="admin_stats")]
+                ])
+            )
+        except Exception as e:
+            logger.error(f"Error in detailed stats: {e}")
+            await callback_query.answer("❌ Ошибка при получении детальной статистики", show_alert=True)
+    
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_search_user")
+@admin_required
+async def admin_search_user_callback(callback_query: CallbackQuery):
+    """Handle search user callback"""
+    await callback_query.message.edit_text(
+        "🔍 **Поиск пользователя**\n\n"
+        "Для поиска пользователя отправьте сообщение в формате:\n"
+        "**search_user <user_id>**\n\n"
+        "Пример:\n"
+        "• `search_user 123456789`\n\n"
+        "Будет показана информация о пользователе и его подписке.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к пользователям", callback_data="admin_users")]
+        ])
+    )
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_block_user")
+@admin_required
+async def admin_block_user_callback(callback_query: CallbackQuery):
+    """Handle block user callback"""
+    await callback_query.message.edit_text(
+        "🚫 **Заблокировать пользователя**\n\n"
+        "Для блокировки пользователя отправьте сообщение в формате:\n"
+        "**block_user <user_id>**\n\n"
+        "Пример:\n"
+        "• `block_user 123456789`\n\n"
+        "Пользователь будет заблокирован и не сможет использовать бота.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к пользователям", callback_data="admin_users")]
+        ])
+    )
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_unblock_user")
+@admin_required
+async def admin_unblock_user_callback(callback_query: CallbackQuery):
+    """Handle unblock user callback"""
+    await callback_query.message.edit_text(
+        "✅ **Разблокировать пользователя**\n\n"
+        "Для разблокировки пользователя отправьте сообщение в формате:\n"
+        "**unblock_user <user_id>**\n\n"
+        "Пример:\n"
+        "• `unblock_user 123456789`\n\n"
+        "Пользователь будет разблокирован и сможет снова использовать бота.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к пользователям", callback_data="admin_users")]
+        ])
+    )
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_payment_analytics")
+@admin_required
+async def admin_payment_analytics_callback(callback_query: CallbackQuery):
+    """Handle payment analytics callback"""
+    async for session in get_db():
+        try:
+            # Get payment analytics
+            payments_result = await session.execute(
+                select(Payment).where(Payment.status == "completed")
+            )
+            payments = payments_result.scalars().all()
+            
+            if not payments:
+                await callback_query.message.edit_text(
+                    "📊 **Аналитика платежей**\n\n"
+                    "❌ Нет данных о завершённых платежах.",
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="🔙 Назад к платежам", callback_data="admin_payments")]
+                    ])
+                )
+                await callback_query.answer()
+                return
+            
+            # Calculate analytics
+            total_revenue = sum(p.amount for p in payments)
+            avg_payment = total_revenue / len(payments)
+            
+            # Payment by currency
+            currency_stats = {}
+            for payment in payments:
+                currency = payment.currency
+                if currency not in currency_stats:
+                    currency_stats[currency] = {"count": 0, "total": 0}
+                currency_stats[currency]["count"] += 1
+                currency_stats[currency]["total"] += payment.amount
+            
+            # Recent payments (last 30 days)
+            recent_payments = [p for p in payments if p.created_at > datetime.now(timezone.utc) - timedelta(days=30)]
+            
+            analytics_text = (
+                f"📊 **Аналитика платежей**\n\n"
+                f"**Общая статистика:**\n"
+                f"• Всего платежей: {len(payments)}\n"
+                f"• Общий доход: ${total_revenue:.2f}\n"
+                f"• Средний платёж: ${avg_payment:.2f}\n"
+                f"• Платежей за 30 дней: {len(recent_payments)}\n\n"
+                f"**По валютам:**\n"
+            )
+            
+            for currency, stats in currency_stats.items():
+                analytics_text += f"• {currency}: {stats['count']} платежей, ${stats['total']:.2f}\n"
+            
+            await callback_query.message.edit_text(
+                analytics_text,
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Обновить", callback_data="admin_payment_analytics")],
+                    [InlineKeyboardButton(text="🔙 Назад к платежам", callback_data="admin_payments")]
+                ])
+            )
+        except Exception as e:
+            logger.error(f"Error in payment analytics: {e}")
+            await callback_query.answer("❌ Ошибка при получении аналитики платежей", show_alert=True)
+    
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_search_payment")
+@admin_required
+async def admin_search_payment_callback(callback_query: CallbackQuery):
+    """Handle search payment callback"""
+    await callback_query.message.edit_text(
+        "🔍 **Поиск платежа**\n\n"
+        "Для поиска платежа отправьте сообщение в формате:\n"
+        "**search_payment <payment_id>**\n\n"
+        "Пример:\n"
+        "• `search_payment 123`\n\n"
+        "Будет показана информация о платеже и связанном пользователе.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к платежам", callback_data="admin_payments")]
+        ])
+    )
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "admin_refund_payment")
+@admin_required
+async def admin_refund_payment_callback(callback_query: CallbackQuery):
+    """Handle refund payment callback"""
+    await callback_query.message.edit_text(
+        "💸 **Возврат платежа**\n\n"
+        "Для возврата платежа отправьте сообщение в формате:\n"
+        "**refund_payment <payment_id>**\n\n"
+        "Пример:\n"
+        "• `refund_payment 123`\n\n"
+        "⚠️ **Внимание:** Возврат платежа отменит подписку пользователя.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к платежам", callback_data="admin_payments")]
+        ])
+    )
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data.startswith("admin_edit_server_"))
+@admin_required
+async def admin_edit_server_callback(callback_query: CallbackQuery):
+    """Handle edit server callback"""
+    server_id = int(callback_query.data.split("_")[-1])
+    
+    await callback_query.message.edit_text(
+        f"📝 **Редактировать сервер**\n\n"
+        f"Для редактирования описания сервера отправьте сообщение в формате:\n"
+        f"**edit_server {server_id} <новое_описание>**\n\n"
+        f"Пример:\n"
+        f"• `edit_server {server_id} Основной сервер США`\n\n"
+        f"Описание сервера будет обновлено.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад к настройкам", callback_data=f"admin_config_server_{server_id}")]
+        ])
+    )
+    await callback_query.answer()
 
 
 # ====== FALLBACK HANDLERS ======
