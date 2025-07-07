@@ -35,7 +35,7 @@ async def setup_bot_appearance():
         
         # 3. Set bot description (what users see in bot profile)
         bot_description = (
-            "🔐 Telegram Proxy Bot - Ваш безопасный способ обхода блокировок\n\n"
+            "🔐 SafeSurf Telegram Proxy Bot - Ваш безопасный способ обхода блокировок\n\n"
             "🌟 Возможности:\n"
             "• Быстрый и безопасный MTProto прокси\n"
             "• Серверы в разных странах\n"
@@ -59,7 +59,7 @@ async def setup_bot_appearance():
         
         # 5. Set bot name (optional - usually set via @BotFather)
         try:
-            await bot.set_my_name("Telegram Proxy Bot")
+            await bot.set_my_name("SafeSurf Telegram Proxy Bot")
             logger.info("✅ Bot name set successfully")
         except Exception as e:
             logger.warning(f"⚠️ Could not set bot name: {e}")

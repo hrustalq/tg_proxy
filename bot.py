@@ -302,7 +302,7 @@ async def config_command(message: Message):
             config_text,
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
+                [InlineKeyboardButton(text="📱 Подключиться", url=telegram_proxy_url)],
                 [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
                 [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
             ])
@@ -407,7 +407,7 @@ async def get_config_callback(callback_query: CallbackQuery):
                 config_text,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
+                    [InlineKeyboardButton(text="📱 Подключиться", url=telegram_proxy_url)],
                     [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
                     [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
                 ])
@@ -503,7 +503,7 @@ async def refresh_config_callback(callback_query: CallbackQuery):
                 config_text,
                 parse_mode="Markdown",
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="📱 Открыть в Telegram", url=telegram_proxy_url)],
+                    [InlineKeyboardButton(text="📱 Подключиться", url=telegram_proxy_url)],
                     [InlineKeyboardButton(text="Обновить конфигурацию", callback_data="refresh_config")],
                     [InlineKeyboardButton(text="Статус прокси", callback_data="proxy_status")]
                 ])

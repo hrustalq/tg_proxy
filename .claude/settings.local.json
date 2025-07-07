@@ -3,7 +3,9 @@
     "allow": [
       "mcp__web-search__search",
       "Bash(mkdir:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(git add:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   }
