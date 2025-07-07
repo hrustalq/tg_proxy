@@ -5,7 +5,7 @@ from typing import List
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.types import LabeledPrice, PreCheckoutQuery
+from aiogram.types import LabeledPrice, PreCheckoutQuery, BotCommand
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db, User, ProxyConfig, Payment, ProxyServer
@@ -19,6 +19,25 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(token=settings.bot_token)
 dp = Dispatcher()
+
+
+async def setup_bot_commands():
+    """Setup bot commands for autocompletion"""
+    commands = [
+        BotCommand(command="start", description="🚀 Start bot and view main menu"),
+        BotCommand(command="help", description="❓ Show help and available commands"),
+        BotCommand(command="config", description="⚙️ Get your proxy configuration"),
+        BotCommand(command="status", description="📊 Check subscription status")
+    ]
+    
+    # Set commands for autocompletion
+    await bot.set_my_commands(commands)
+    
+    # Set menu button to help users discover commands
+    from aiogram.types import MenuButtonCommands
+    await bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+    
+    logger.info("Bot commands and menu button set up successfully")
 
 
 def generate_proxy_secret() -> str:
@@ -146,10 +165,12 @@ async def help_command(message: Message):
     """Handle /help command"""
     help_text = (
         "🤖 **Telegram Proxy Bot Commands**\n\n"
-        "/start - Welcome message and main menu\n"
-        "/config - Get your proxy configuration\n"
-        "/status - Check subscription status\n"
-        "/help - Show this help message\n\n"
+        "💡 **Tip:** Type `/` to see all available commands!\n\n"
+        "**Main Commands:**\n"
+        "🚀 `/start` - Welcome message and main menu\n"
+        "⚙️ `/config` - Get your proxy configuration\n"
+        "📊 `/status` - Check subscription status\n"
+        "❓ `/help` - Show this help message\n\n"
         "🔗 **Features:**\n"
         "• Secure MTProto proxy protocol\n"
         "• Multiple server locations\n"
@@ -164,6 +185,18 @@ async def help_command(message: Message):
     
     async for session in get_db():
         user = await get_user_by_telegram_id(session, message.from_user.id)
+        
+        # Add admin commands section for admin users
+        if is_admin(message.from_user.id):
+            admin_help = (
+                "\n\n🔐 **Admin Commands:**\n"
+                "• `/admin` - Admin panel\n"
+                "• `/admin_servers` - Manage proxy servers\n"
+                "• `/admin_stats` - View bot statistics\n"
+                "• `/admin_users` - User management\n"
+                "• `/admin_payments` - Payment overview"
+            )
+            help_text += admin_help
         
         if await is_user_subscribed(user):
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
@@ -472,11 +505,11 @@ async def admin_command(message: Message):
     """Admin panel main menu"""
     admin_text = (
         "🔐 **Admin Panel**\n\n"
-        "**Server Management:**\n"
-        "/admin_servers - Manage proxy servers\n"
-        "/admin_stats - View bot statistics\n"
-        "/admin_users - User management\n"
-        "/admin_payments - Payment overview\n\n"
+        "**Available Commands:**\n"
+        "`/admin_servers` - Manage proxy servers\n"
+        "`/admin_stats` - View bot statistics\n"
+        "`/admin_users` - User management\n"
+        "`/admin_payments` - Payment overview\n\n"
         "**Quick Actions:**\n"
         "• Add/Remove servers\n"
         "• Monitor server status\n"
@@ -1123,3 +1156,84 @@ async def handle_grant_sub_command(message: Message):
             "❌ Error granting subscription. Please try again.",
             parse_mode="Markdown"
         )
+
+
+# ====== FALLBACK HANDLERS ======
+
+@dp.message(lambda message: message.text and message.text.startswith('/'))
+async def handle_unknown_command(message: Message):
+    """Handle unknown commands with helpful message"""
+    command = message.text.split()[0]  # Get just the command part
+    
+    # Check if user is admin to provide appropriate command list
+    user_is_admin = is_admin(message.from_user.id)
+    
+    unknown_command_text = (
+        f"❓ **Unknown Command: `{command}`**\n\n"
+        "I don't recognize that command. Here are the available commands:\n\n"
+        "**Main Commands:**\n"
+        "• `/start` - Start bot and view main menu\n"
+        "• `/help` - Show help and available commands\n"
+        "• `/config` - Get your proxy configuration\n"
+        "• `/status` - Check subscription status\n"
+    )
+    
+    # Add admin commands for admin users
+    if user_is_admin:
+        unknown_command_text += (
+            "\n**Admin Commands:**\n"
+            "• `/admin` - Admin panel\n"
+            "• `/admin_servers` - Manage proxy servers\n"
+            "• `/admin_stats` - View bot statistics\n"
+            "• `/admin_users` - User management\n"
+            "• `/admin_payments` - Payment overview\n"
+        )
+    
+    unknown_command_text += "\n💡 **Tip:** Type `/` to see commands with autocompletion!"
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📋 Show Help", callback_data="show_help")],
+        [InlineKeyboardButton(text="🚀 Go to Main Menu", callback_data="show_start")]
+    ])
+    
+    await message.answer(unknown_command_text, parse_mode="Markdown", reply_markup=keyboard)
+
+
+@dp.callback_query(lambda c: c.data == "show_help")
+async def show_help_callback(callback_query: CallbackQuery):
+    """Handle show help callback from unknown command handler"""
+    # Create a message object for the help command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await help_command(message)
+    await callback_query.answer()
+
+
+@dp.callback_query(lambda c: c.data == "show_start")
+async def show_start_callback(callback_query: CallbackQuery):
+    """Handle show start callback from unknown command handler"""
+    # Create a message object for the start command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await start_command(message)
+    await callback_query.answer()
+
+
+@dp.message()
+async def handle_text_message(message: Message):
+    """Handle any other text messages with guidance"""
+    guidance_text = (
+        "👋 Hi! I'm a Telegram Proxy Bot.\n\n"
+        "💡 **To get started:**\n"
+        "• Type `/start` to see the main menu\n"
+        "• Type `/help` to see all available commands\n"
+        "• Type `/` to see commands with autocompletion\n\n"
+        "🔧 **Quick Actions:**"
+    )
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🚀 Start Bot", callback_data="show_start")],
+        [InlineKeyboardButton(text="📋 Show Help", callback_data="show_help")]
+    ])
+    
+    await message.answer(guidance_text, parse_mode="Markdown", reply_markup=keyboard)

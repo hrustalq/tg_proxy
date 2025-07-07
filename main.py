@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from bot import bot, dp
+from bot import bot, dp, setup_bot_commands
 from database import init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +14,9 @@ async def main():
     # Initialize database
     await init_db()
     logger.info("Database initialized")
+    
+    # Setup bot commands for autocompletion
+    await setup_bot_commands()
     
     # Start polling
     await dp.start_polling(bot)
