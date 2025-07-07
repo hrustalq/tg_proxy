@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import functools
 from datetime import datetime, timedelta, timezone
 from typing import List
 from aiogram import Bot, Dispatcher, types
@@ -58,14 +59,20 @@ def is_admin(user_id: int) -> bool:
 
 def admin_required(func):
     """Decorator to require admin access"""
+    @functools.wraps(func)
     async def wrapper(message_or_query, **kwargs):
         user_id = message_or_query.from_user.id
+        logger.debug(f"Admin check for function {func.__name__}: user_id={user_id}")
+        
         if not is_admin(user_id):
+            logger.warning(f"Admin access denied for user {user_id} to function {func.__name__}")
             if isinstance(message_or_query, CallbackQuery):
                 await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.", show_alert=True)
             else:
                 await message_or_query.answer("❌ Доступ запрещен. Требуются права администратора.")
             return
+        
+        logger.info(f"Admin access granted for user {user_id} to function {func.__name__}")
         return await func(message_or_query, **kwargs)
     return wrapper
 
@@ -754,7 +761,10 @@ async def admin_payments_command(message: Message):
 @admin_required
 async def admin_servers_callback(callback_query: CallbackQuery):
     """Handle admin servers callback"""
-    await admin_servers_command(callback_query.message)
+    # Create a message object with proper user info for the command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await admin_servers_command(message)
     await callback_query.answer()
 
 
@@ -762,7 +772,10 @@ async def admin_servers_callback(callback_query: CallbackQuery):
 @admin_required
 async def admin_stats_callback(callback_query: CallbackQuery):
     """Handle admin stats callback"""
-    await admin_stats_command(callback_query.message)
+    # Create a message object with proper user info for the command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await admin_stats_command(message)
     await callback_query.answer()
 
 
@@ -770,7 +783,10 @@ async def admin_stats_callback(callback_query: CallbackQuery):
 @admin_required
 async def admin_users_callback(callback_query: CallbackQuery):
     """Handle admin users callback"""
-    await admin_users_command(callback_query.message)
+    # Create a message object with proper user info for the command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await admin_users_command(message)
     await callback_query.answer()
 
 
@@ -778,7 +794,10 @@ async def admin_users_callback(callback_query: CallbackQuery):
 @admin_required
 async def admin_payments_callback(callback_query: CallbackQuery):
     """Handle admin payments callback"""
-    await admin_payments_command(callback_query.message)
+    # Create a message object with proper user info for the command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await admin_payments_command(message)
     await callback_query.answer()
 
 
@@ -786,7 +805,10 @@ async def admin_payments_callback(callback_query: CallbackQuery):
 @admin_required
 async def admin_main_callback(callback_query: CallbackQuery):
     """Handle return to admin main menu"""
-    await admin_command(callback_query.message)
+    # Create a message object with proper user info for the command
+    message = callback_query.message
+    message.from_user = callback_query.from_user
+    await admin_command(message)
     await callback_query.answer()
 
 
