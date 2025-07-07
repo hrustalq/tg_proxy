@@ -9,7 +9,7 @@ services:
     volumes:
       - ./mtg/start.sh:/start.sh:ro
       - ./mtg/blocklist.txt:/blocklist.txt:ro
-    entrypoint: ["sh", "/start.sh"]
+    entrypoint: ["/bin/sh", "/start.sh"]
     networks:
       - tg-proxy-network
     environment:
